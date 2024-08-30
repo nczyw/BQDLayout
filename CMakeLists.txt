@@ -23,6 +23,7 @@ endif(MSVC)
 add_library(${PROJECT_NAME} SHARED
   bqdlayout.cpp
   bqdlayout.h
+  version.rc
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE
     spdlog

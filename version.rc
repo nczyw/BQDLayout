@@ -1,0 +1,43 @@
+//IDI_ICON1 ICON; "Logo.ico"
+//IDI_ICON1   ICON   DISCARDABLE   "Logo.ico"
+#if defined(UNDER_CE)
+#include <winbase.h>
+#else
+#include <winver.h>
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION 1,0,0,0
+    FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+    FILEFLAGS VS_FF_DEBUG
+#else
+    FILEFLAGS 0x0L
+#endif
+    FILEOS VOS__WINDOWS32
+    FILETYPE VFT_DLL
+    FILESUBTYPE 0x0L
+    BEGIN
+        BLOCK "StringFileInfo"
+        BEGIN
+            BLOCK "040904E4"
+            BEGIN
+
+                VALUE "CompanyName", "nczyw\0"
+                VALUE "FileDescription", "Create pdf or print\0"
+                VALUE "FileVersion", "1.0.0.0\0"
+                VALUE "InternalName", "BQDLayout\0"
+                VALUE "OriginalFilename", "BQDLayout.dll\0"
+                VALUE "ProductName", "BQDLayout\0"
+                VALUE "ProductVersion", "1.0.0.0\0"
+                VALUE "LegalCopyright", "Copyright 2024 nczyw All rights reserved.\0"
+
+
+           END
+        END
+
+        BLOCK "VarFileInfo"
+        BEGIN
+            VALUE "Translation", 0x409, 1200
+        END
+    END

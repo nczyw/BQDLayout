@@ -1,6 +1,8 @@
 # BQDLayout
 ## 用于生成pdf或者打印文件的库  
 基于[BQDCode开源库](https://github.com/nczyw/BQDCode),使用Qt的GUI来生成dpf和打印文件
+## Version 1.0.0.0
+ * 初次发布
 ## 库介绍
  * 通过调用createBQDLayoutFile函数,可以轻松的创建一个bqd格式的文件,
    用于存放所有打印内容,基于SQLITE.

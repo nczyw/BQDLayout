@@ -45,6 +45,7 @@ else()
 
     add_executable(${TestDll}
         test/main.cpp
+        CHANGELOG.md
     )
 endif()
 

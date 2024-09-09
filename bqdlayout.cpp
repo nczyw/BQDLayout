@@ -1522,7 +1522,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the Barcode table.
     cmd = R"(
         create table if not exists [BarCode] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             str text not null,
@@ -1542,7 +1542,7 @@ BQDError createBQDLayoutFile(){
             widthScalef double not null ,
             height double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1556,7 +1556,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the StringText table.
     cmd = R"(
         create table if not exists [StringText] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             str text not null,
@@ -1571,7 +1571,7 @@ BQDError createBQDLayoutFile(){
             fontWeight integer not null ,
             fontItalic bool not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1585,7 +1585,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the Rectangle table.
     cmd = R"(
         create table if not exists [Rectangle] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             posX double not null ,
@@ -1596,7 +1596,7 @@ BQDError createBQDLayoutFile(){
             fColor text not null ,
             penWidth  double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1611,7 +1611,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the Line table.
     cmd = R"(
         create table if not exists [Line] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             posX double not null ,
@@ -1621,7 +1621,7 @@ BQDError createBQDLayoutFile(){
             fColor text not null ,
             penWidth  double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1636,7 +1636,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the RoundedRect table.
     cmd = R"(
         create table if not exists [RoundedRect] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             posX double not null ,
@@ -1649,7 +1649,7 @@ BQDError createBQDLayoutFile(){
             fColor text not null ,
             penWidth  double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1664,7 +1664,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the DataMatrix table.
     cmd = R"(
         create table if not exists [DataMatrix] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             str text not null,
@@ -1677,7 +1677,7 @@ BQDError createBQDLayoutFile(){
             argin integer not null ,
             scalef double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1691,7 +1691,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the QRCode table.
     cmd = R"(
         create table if not exists [QRCode] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             str text not null,
@@ -1707,7 +1707,7 @@ BQDError createBQDLayoutFile(){
             CaseSensitive bool not null ,
             scalef double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){
@@ -1722,7 +1722,7 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the Ellipse table.
     cmd = R"(
         create table if not exists [Ellipse] (
-            key_index integer not null ,
+            uuid text not null ,
             page  integer not null ,
             layer integer not null ,
             posX double not null ,
@@ -1733,7 +1733,7 @@ BQDError createBQDLayoutFile(){
             fColor text not null ,
             penWidth double not null ,
             angle double not null ,
-            primary key(key_index)
+            primary key(uuid)
         );
     )";
     if(!query.exec(cmd)){

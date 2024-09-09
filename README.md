@@ -1,6 +1,8 @@
 # BQDLayout
 ## 用于生成pdf或者打印文件的库  
 基于[BQDCode开源库](https://github.com/nczyw/BQDCode),使用Qt的GUI来生成dpf和打印文件
+## Version 1.0.0.1 2024-09-09 11:01
+ * 所有表格中```key_index```修改为uuid,uuid作为主键更加安全和方便
 ## Version 1.0.0.0
  * 初次发布
 ## 库介绍
@@ -28,7 +30,7 @@
  * ```margright```:类型:```double```;页边距右,单位MM.
  * ```margbottom```:类型:```double```;页边距下,单位MM.
 ### BarCode表格
- * ```key_index```:类型:```integer```;表格的主键;条码的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;条码的序号,不可重复.
  * ```page```:类型:```integer```;条码位于哪一页,0页的条码不会打印.
  * ```layer```:类型:```integer```;条码位于的图层,数字越大,图层越高,条码越最后绘制.
  * ```str```:类型:```text```;条码要显示的内容.
@@ -49,7 +51,7 @@
  * ```height```:类型:```double```;条码的高度,单位MM.
  * ```angle```:类型:```double```;条码的旋转角度,不要超过360度.
 ### DataMatrix表格
- * ```key_index```:类型:```integer```;表格的主键;DataMatrix的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;DataMatrix的序号,不可重复.
  * ```page```:类型:```integer```;DataMatrix位于哪一页,0页的DataMatrix不会打印.
  * ```layer```:类型:```integer```;DataMatrix位于的图层,数字越大,图层越高,DataMatrix越最后绘制.
  * ```str```:类型:```text```;DataMatrix要显示的内容.
@@ -63,7 +65,7 @@
  * ```scalef```:类型:```double```;DataMatrix的宽度,单位MM.
  * ```angle```:类型:```double```;DataMatrix的旋转角度,不要超过360度.
 ### Ellipse表格
- * ```key_index```:类型:```integer```;表格的主键;Ellipse的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;Ellipse的序号,不可重复.
  * ```page```:类型:```integer```;Ellipse位于哪一页,0页的Ellipse不会打印.
  * ```layer```:类型:```integer```;Ellipse位于的图层,数字越大,图层越高,Ellipse越最后绘制.
  * ```str```:类型:```text```;Ellipse要显示的内容.
@@ -76,7 +78,7 @@
  * ```penWidth```:类型:```double```;Ellipse画笔宽度,单位MM.
  * ```angle```:类型:```double```;Ellipse的旋转角度,不要超过360度.
 ### Line表格
- * ```key_index```:类型:```integer```;表格的主键;Line的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;Line的序号,不可重复.
  * ```page```:类型:```integer```;Line位于哪一页,0页的Line不会打印.
  * ```layer```:类型:```integer```;Line位于的图层,数字越大,图层越高,Line越最后绘制.
  * ```posX```:类型:```double```;Line的X坐标,单位MM.
@@ -87,7 +89,7 @@
  * ```penWidth```:类型:```double```;Line画笔宽度,单位MM.
  * ```angle```:类型:```double```;Line的旋转角度,不要超过360度.
 ### QRCode表格
- * ```key_index```:类型:```integer```;表格的主键;QRCode的序号,不可重复.
+ * ```uuid```:类型:```integer```;表格的主键;QRCode的序号,不可重复.
  * ```page```:类型:```integer```;QRCode位于哪一页,0页的QRCode不会打印.
  * ```layer```:类型:```integer```;QRCode位于的图层,数字越大,图层越高,QRCode越最后绘制.
  * ```str```:类型:```text```;QRCode要显示的内容.
@@ -104,7 +106,7 @@
  * ```scalef```:类型:```double```;QRCode的宽度,单位MM.
  * ```angle```:类型:```double```;QRCode的旋转角度,不要超过360度.
 ### Rectangle表格
- * ```key_index```:类型:```integer```;表格的主键;Rectangle的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;Rectangle的序号,不可重复.
  * ```page```:类型:```integer```;Rectangle位于哪一页,0页的Rectangle不会打印.
  * ```layer```:类型:```integer```;Rectangle位于的图层,数字越大,图层越高,Rectangle越最后绘制.
  * ```posX```:类型:```double```;Rectangle的X坐标,单位MM.
@@ -116,7 +118,7 @@
  * ```penWidth```:类型:```double```;Rectangle画笔宽度,单位MM.
  * ```angle```:类型:```double```;Rectangle的旋转角度,不要超过360度.
 ### RoundedRect表格
- * ```key_index```:类型:```integer```;表格的主键;RoundedRect的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;RoundedRect的序号,不可重复.
  * ```page```:类型:```integer```;RoundedRect位于哪一页,0页的RoundedRect不会打印.
  * ```layer```:类型:```integer```;RoundedRect位于的图层,数字越大,图层越高,RoundedRect越最后绘制.
  * ```posX```:类型:```double```;RoundedRect的X坐标,单位MM.
@@ -130,7 +132,7 @@
  * ```penWidth```:类型:```double```;RoundedRect画笔宽度,单位MM.
  * ```angle```:类型:```double```;RoundedRect的旋转角度,不要超过360度.
 ### StringText表格
- * ```key_index```:类型:```integer```;表格的主键;StringText的序号,不可重复.
+ * ```uuid```:类型:```text```;表格的主键;StringText的序号,不可重复.
  * ```page```:类型:```integer```;StringText位于哪一页,0页的StringText不会打印.
  * ```layer```:类型:```integer```;StringText位于的图层,数字越大,图层越高,StringText越最后绘制.
  * ```str```:类型:```text```;StringText要显示的内容.

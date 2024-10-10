@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
        std::cout << createBQDLayoutFile() << std::endl;
     const char * tmp = "Var=1234567890";
     std::cout << printfBQDCode("C:/Users/Sublime/Desktop/pdftest/BQDCode.bqd","C:/Users/Sublime/Desktop/pdftest/bqdcode.pdf",1,tmp) << std::endl;//Microsoft Print to PDF
-    //   std::cout << printfBQDCode("C:/Users/Sublime/Desktop/BQDCode.bqd","Microsoft Print to PDF",0,tmp) << std::endl;
+    //std::cout << printfBQDCode("C:/Users/Sublime/Desktop/pdftest/BQDCode.bqd","Microsoft Print to PDF",0,tmp) << std::endl;
     const char * var = NULL;
     var = getVarlist("C:/Users/Sublime/Desktop/pdftest/BQDCode.bqd");
     std::string str = var;

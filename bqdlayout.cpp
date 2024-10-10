@@ -185,7 +185,7 @@ static QByteArray &getPrintVal(){
 }
 
 static bool ptest = false ;                 //Test print.
-static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf);  //Read printing parameters.
+static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf, int &dpi);  //Read printing parameters.
 //dpi
 typeDPI dpi = {0};
 static bool dllcheck(void); //Check if BQDDLL exists.
@@ -271,9 +271,10 @@ static void addlog(QByteArray log , const bool &err = false );  //Add a log.
  * @param dbfile        Printer configuration file.
  * @param pagesize      Page size.
  * @param marginsf      Margins.
+ * @param dpi           Printer dpi
  * @return bool         Whether successful.
  */
-static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &marginsf){
+static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &marginsf , int &dpi){
     bool ok = false;
     QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
     QSqlDatabase db;
@@ -291,7 +292,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
     //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom "
+    QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom,dpi "
                           "from config"
                           );
     if(!query.exec(cmd)){
@@ -301,6 +302,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
         query.first();
         pagesize = QPageSize(QSizeF(query.value(0).toDouble(),query.value(1).toDouble()),QPageSize::Millimeter);
         marginsf = QMarginsF(query.value(2).toDouble(),query.value(3).toDouble(),query.value(4).toDouble(),query.value(5).toDouble());
+        dpi = query.value(6).toInt();
         ok =true ;
     }
     if(db.isOpen()) db.close();
@@ -1501,6 +1503,7 @@ BQDError createBQDLayoutFile(){
     QString cmd = R"(
         create table if not exists [config] (
             id integer primary key check(id = 1) ,
+            dpi integer not null ,
             outputformat integer not null ,
             pagewidth double not null ,
             pageheight double not null,
@@ -1770,10 +1773,13 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
     //Read the configuration file.
     QPageSize pagesize;         //PageSize.
     QMarginsF margins;          //Margin.
-    if(!getconfig(dbfile,pagesize,margins)){
+    int getDpi;                    //dpi.
+    if(!getconfig(dbfile,pagesize,margins,getDpi)){
         return BQDConfigErr;
     }
-    QPrinter printer(QPrinter::HighResolution);     //Printer object.
+    if(getDpi <= 0) getDpi = 1200 ;     //Set very hight dpi.
+    QPrinter printer;     //Printer object.
+    printer.setResolution(getDpi);  //Set printer dpi.
     printer.setOutputFormat(static_cast<QPrinter::OutputFormat>(opf));  //Set the print format.
     printer.setPageSize(pagesize);                  //Set the paper size.
     printer.setPageMargins(margins);                //Set the margin.
@@ -1791,6 +1797,8 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
     }else {          //Call the standard printer.
         printer.setPrinterName(printername);
     }
+
+    addlog(QString("The current printer DPI is:%1").arg(QString::number(printer.resolution())).toUtf8());
 
     //Get the printer DPI.
     dpi.printerdpiX = printer.logicalDpiX();

@@ -25,6 +25,7 @@
 #include <QScreen>
 #include <QDateTime>
 #include <QDebug>
+#include <QUuid>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/daily_file_sink.h>
@@ -63,6 +64,7 @@ enum {
 
 //Barcode type
 typedef struct typeBarCode{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QByteArray      str                 = "BQDCode";                    //Content to display in the barcode.
     bool            var                 = false ;                       //Whether it is a variable.
@@ -81,6 +83,7 @@ typedef struct typeBarCode{
 
 //DataMatrix
 typedef struct typeDataMatrix{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QByteArray      str                 = "DataMatrix";                 //Content to display in the DataMatrix.
     bool            var                 = false ;                       //Whether it is a variable.
@@ -95,6 +98,7 @@ typedef struct typeDataMatrix{
 
 //QR code
 typedef struct typeQRCode{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QByteArray      str                 = "QRCode";                     //Content to display in the QRCode.
     bool            var                 = false ;                       //Whether it is a variable.
@@ -113,6 +117,7 @@ typedef struct typeQRCode{
 
 //Character type.
 typedef struct typeStringText{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QByteArray      str                 = "String";                     //Content to display in the Character.
     bool            var                 = false ;                       //Whether it is a variable.
@@ -127,6 +132,7 @@ typedef struct typeStringText{
 
 //Rectangle type.
 typedef struct typeRectangle{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QPointF         postion             = QPointF(0,0);                 //Rectangle position.
     QRectF          rect                = QRectF(0,0,1,1);              //Rectangle parameters.
@@ -138,6 +144,7 @@ typedef struct typeRectangle{
 
 //Rounded rectangle type.
 typedef struct typeRoundedRect{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QPointF         postion             = QPointF(0,0);                 //Rounded rectangle position.
     QRectF          rect                = QRectF(0,0,1,1);              //Rounded rectangle parameters.
@@ -151,6 +158,7 @@ typedef struct typeRoundedRect{
 
 //Circle type.
 typedef struct typeEllipse{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QPointF         postion             = QPointF(0,0);                 //Circle position.
     double          width               = 0 ;                           //Circle width
@@ -163,6 +171,7 @@ typedef struct typeEllipse{
 
 //Line type.
 typedef struct typeLine{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces) ;
     int             layer               = 0 ;                           //Layer location.
     QPointF         spostion            = QPointF(0,0);                 //Line starting coordinates.
     QPointF         epostion            = QPointF(0,0);                 //Line ending coordinates.
@@ -170,6 +179,24 @@ typedef struct typeLine{
     double          penWidth            = 0.1;                          //Line pen width.
     double          angle               = 0 ;
 }typeLine;
+
+//Picture type.
+enum PicDisplayMode{
+    Tile,
+    Stretch,
+    KeepAspectRatio
+};
+typedef struct typePicture{
+    QByteArray      uuid                = QUuid::createUuid().toByteArray(QUuid::WithoutBraces);
+    int             layer               = 0 ;                           //Layer location.
+    QByteArray      PicPath             = QByteArray();                 //Picture path
+    bool            var                 = false ;                       //Whether it is a variable.
+    QByteArray      varName             = "";                           //Variable name.
+    QPointF         postion             = QPointF(0,0);                 //Picture position.
+    QSize           size                = QSize(0,0);                   //Picture size.
+    PicDisplayMode  disMode             = KeepAspectRatio;              //Picture display mode.
+    double          angle               = 0 ;
+}typePicture;
 
 //log
 std::shared_ptr<spdlog::logger> BQDlogger = spdlog::daily_logger_format_mt("BQDLayout","logs/BQDLayout_" + QDateTime::currentDateTime().toString("yyyy-MM-dd").toStdString() + ".txt",0,0);      //日志记录器
@@ -185,7 +212,7 @@ static QByteArray &getPrintVal(){
 }
 
 static bool ptest = false ;                 //Test print.
-static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf, int &dpi);  //Read printing parameters.
+static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf, int &dpi, int &printRepetitions);  //Read printing parameters.
 //dpi
 typeDPI dpi = {0};
 static bool dllcheck(void); //Check if BQDDLL exists.
@@ -264,17 +291,26 @@ static QVector<typeEllipse> & getellipse(){
 static bool createEllipse(QPainter &painter);           //Create a circle
 static bool readEllipse(QString dbfile, int page);      //Read circle from a specified page.
 
+//Picture list
+static QVector<typePicture> & getPicture(){
+    static QVector<typePicture> picture;
+    return picture;
+}
+static bool createPicture(QPainter &painter , const QMap<QString,QString> var, int CurRepCount);     //Create a picture
+static bool readPictrue(QString dbfile, int page);                                  //Read picture from a specified page.
+
 static void addlog(QByteArray log , const bool &err = false );  //Add a log.
 
 /**
- * @brief getconfig     Read printing parameters.
- * @param dbfile        Printer configuration file.
- * @param pagesize      Page size.
- * @param marginsf      Margins.
- * @param dpi           Printer dpi
- * @return bool         Whether successful.
+ * @brief getconfig         Read printing parameters.
+ * @param dbfile            Printer configuration file.
+ * @param pagesize          Page size.
+ * @param marginsf          Margins.
+ * @param dpi               Printer dpi.
+ * @param printRepetitions  Print repetitions.
+ * @return bool             Whether successful.
  */
-static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &marginsf , int &dpi){
+static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &marginsf , int &dpi , int &printRepetitions){
     bool ok = false;
     QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
     QSqlDatabase db;
@@ -292,7 +328,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
     //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom,dpi "
+    QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom,dpi,printRepetitions "
                           "from config"
                           );
     if(!query.exec(cmd)){
@@ -303,6 +339,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
         pagesize = QPageSize(QSizeF(query.value(0).toDouble(),query.value(1).toDouble()),QPageSize::Millimeter);
         marginsf = QMarginsF(query.value(2).toDouble(),query.value(3).toDouble(),query.value(4).toDouble(),query.value(5).toDouble());
         dpi = query.value(6).toInt();
+        printRepetitions = query.value(7).toInt();
         ok =true ;
     }
     if(db.isOpen()) db.close();
@@ -638,7 +675,7 @@ static bool readBarcode(QString dbfile, int page){
 
     QSqlQuery query(db);
 
-    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,type,disPlayText,argin,widthScalef,height,angle "
+    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,type,disPlayText,argin,widthScalef,height,angle,uuid "
                           "from BarCode "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -682,6 +719,7 @@ static bool readBarcode(QString dbfile, int page){
             tmp.widthScalef = query.value(15).toDouble() * dpi.printerdpiX / 25.4;
             tmp.height = query.value(16).toDouble() * dpi.printerdpiY / 25.4;
             tmp.angle = query.value(17).toDouble();
+            tmp.uuid = query.value(18).toString().toUtf8();
             getbarcode().append(tmp);
             //    qDebug() << tmp.layer << QString(tmp.str) << tmp.var << QString(tmp.varName) << tmp.postion << tmp.bColor << tmp.fColor
             //             << tmp.font << tmp.type << tmp.disPlayText
@@ -787,7 +825,7 @@ static bool readDataMatrix(QString dbfile, int page){
     //addlog(QString("The BQDLayout file was opened successfully.").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,argin,scalef,angle "
+    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,argin,scalef,angle,uuid "
                           "from DataMatrix "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -828,6 +866,7 @@ static bool readDataMatrix(QString dbfile, int page){
             tmp.argin = (dpi.printerdpiX > dpi.printerdpiY) ? query.value(8).toDouble() * dpi.printerdpiX / 25.4 : query.value(8).toDouble() * dpi.printerdpiY / 25.4;
             tmp.scalef = (dpi.printerdpiX > dpi.printerdpiY) ? query.value(9).toDouble() * dpi.printerdpiX / 25.4 : query.value(9).toDouble() * dpi.printerdpiY / 25.4;
             tmp.angle = query.value(10).toDouble();
+            tmp.uuid = query.value(11).toString().toUtf8();
             getdatamatrix().append(tmp);
 
         }
@@ -911,7 +950,7 @@ static bool readQRCode(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,QRVersion,QRlevel,QRhint,CaseSensitive,scalef,angle "
+    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,QRVersion,QRlevel,QRhint,CaseSensitive,scalef,angle,uuid "
                           "from QRCode "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -955,6 +994,7 @@ static bool readQRCode(QString dbfile, int page){
             tmp.CaseSensitive = query.value(11).toBool();
             tmp.scalef = (dpi.printerdpiX > dpi.printerdpiY) ? query.value(12).toDouble() * dpi.printerdpiX / 25.4 : query.value(12).toDouble() * dpi.printerdpiY / 25.4;
             tmp.angle = query.value(13).toDouble();
+            tmp.uuid = query.value(14).toString().toUtf8();
             getqrcode().append(tmp);
         }
         if(error == 0){
@@ -975,11 +1015,13 @@ static bool createStringText(QPainter &painter , const QMap<QString,QString> var
     for (auto & _stringtext: getstringtext()) {
         if(!ptest){
             if(_stringtext.var){
+
                 QString tmp = var.value(_stringtext.varName);
                 addlog(QString("Character variable found. Variable name: %1, Variable value: %2").arg(_stringtext.varName,tmp).toUtf8());
                 _stringtext.str = (tmp == "")?QString("Err:%1").arg(_stringtext.varName.data()).toUtf8():tmp.toUtf8();
             }
         }
+
         painter.translate(_stringtext.postion);     //Set the origin.
         painter.rotate(_stringtext.angle);          //Set the angle.
         painter.save();
@@ -998,6 +1040,7 @@ static bool createStringText(QPainter &painter , const QMap<QString,QString> var
         painter.setPen(_stringtext.fColor);
         painter.setFont(_stringtext.font);
         painter.drawText(0,mH ,_stringtext.str);
+    //    qDebug() << _stringtext.postion << _stringtext.fColor << _stringtext.bColor << _stringtext.font  << QString(_stringtext.str);
 
         painter.restore();
         painter.translate(QPointF(0,0) - _stringtext.postion);     //Return to the origin before drawing.
@@ -1029,7 +1072,7 @@ static bool readStringText(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,angle "
+    QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,angle,uuid "
                           "from StringText "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -1068,7 +1111,7 @@ static bool readStringText(QString dbfile, int page){
             tmp.fColor     = QColor(vffColor.at(0).toInt(),vffColor.at(1).toInt(),vffColor.at(2).toInt(),vffColor.at(3).toInt());
             tmp.font       = QFont(query.value(8).toString(),query.value(9).toInt(),query.value(10).toInt(),query.value(11).toBool());
             tmp.angle      = query.value(12).toDouble();
-
+            tmp.uuid       = query.value(13).toString().toUtf8();
             getstringtext().append(tmp);
         //    qDebug() << "Counter:" << error << "page:" << page ;
             //qDebug() << tmp.layer << tmp.str << tmp.var << tmp.varName << tmp.postion << tmp.bColor << tmp.fColor << tmp.font << tmp.angle;
@@ -1126,7 +1169,7 @@ static bool readRectangle(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,posX,posY,posWidth,posHeight,bColor,fColor,penWidth,angle "
+    QString cmd = QString("select layer,posX,posY,posWidth,posHeight,bColor,fColor,penWidth,angle,uuid "
                           "from Rectangle "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -1164,6 +1207,7 @@ static bool readRectangle(QString dbfile, int page){
             tmp.fColor = QColor(vffColor.at(0).toInt(),vffColor.at(1).toInt(),vffColor.at(2).toInt(),vffColor.at(3).toInt());
             tmp.penWidth = query.value(7).toDouble() * dpi.printerdpiX / 25.4;
             tmp.angle = query.value(8).toDouble();
+            tmp.uuid = query.value(9).toString().toUtf8();
             getrectangle().append(tmp);
         }
         if(error == 0){
@@ -1219,7 +1263,7 @@ static bool readRoundedRect(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,posX,posY,posWidth,posHeight,xRadius,yRadius,bColor,fColor,penWidth,angle "
+    QString cmd = QString("select layer,posX,posY,posWidth,posHeight,xRadius,yRadius,bColor,fColor,penWidth,angle,uuid "
                           "from RoundedRect "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -1259,6 +1303,7 @@ static bool readRoundedRect(QString dbfile, int page){
             tmp.fColor = QColor(vffColor.at(0).toInt(),vffColor.at(1).toInt(),vffColor.at(2).toInt(),vffColor.at(3).toInt());
             tmp.penWidth = query.value(9).toDouble() * dpi.printerdpiX / 25.4;
             tmp.angle = query.value(10).toDouble();
+            tmp.uuid = query.value(11).toString().toUtf8();
             getroundedrect().append(tmp);
         }
         if(error == 0){
@@ -1313,7 +1358,7 @@ static bool readLine(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,posX,posY,iX,iY,fColor,penWidth,angle "
+    QString cmd = QString("select layer,posX,posY,iX,iY,fColor,penWidth,angle,uuid "
                           "from Line "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -1342,6 +1387,7 @@ static bool readLine(QString dbfile, int page){
             tmp.fColor = QColor(vffColor.at(0).toInt(),vffColor.at(1).toInt(),vffColor.at(2).toInt(),vffColor.at(3).toInt());
             tmp.penWidth = query.value(6).toDouble() * dpi.printerdpiX / 25.4;
             tmp.angle = query.value(7).toDouble();
+            tmp.uuid = query.value(8).toString().toUtf8();
             getline().append(tmp);
         }
         if(error == 0){
@@ -1397,7 +1443,7 @@ static bool readEllipse(QString dbfile, int page){
     //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select layer,posX,posY,width,height,bColor,fColor,penWidth,angle "
+    QString cmd = QString("select layer,posX,posY,width,height,bColor,fColor,penWidth,angle,uuid "
                           "from Ellipse "
                           "where page = %1 "
                           "order by layer ASC;"
@@ -1435,8 +1481,113 @@ static bool readEllipse(QString dbfile, int page){
             tmp.fColor = QColor(vffColor.at(0).toInt(),vffColor.at(1).toInt(),vffColor.at(2).toInt(),vffColor.at(3).toInt());
             tmp.penWidth = query.value(7).toDouble() * dpi.printerdpiX / 25.4;
             tmp.angle = query.value(8).toDouble();
-
+            tmp.uuid = query.value(9).toString().toUtf8();
             getellipse().append(tmp);
+        }
+        if(error == 0){
+            return false;
+        }
+    }
+    if(db.isOpen()) db.close();
+    return true;
+}
+
+/**
+ * @brief createPicture     Add a picture
+ * @param painter           Drawing object.
+ * @param var               Variable.
+ * @return                  Was it successful.
+ */
+static bool createPicture(QPainter &painter, const QMap<QString, QString> var , int CurRepCount){
+    for (auto & _picture: getPicture()) {
+        if(!ptest){
+            if(_picture.var){
+                QString tmp = var.value(_picture.varName);
+                addlog(QString("Character variable found. Variable name: %1, Variable value: %2").arg(_picture.varName,tmp).toUtf8());
+                _picture.PicPath = (tmp == "")?QString("Err:%1").arg(_picture.varName.data()).toUtf8():tmp.toUtf8();
+                return false;
+            }
+        }
+
+        QPixmap pixmap(_picture.PicPath);
+        if(pixmap.isNull()){
+            addlog(QString("The image path is incorrect.").toUtf8(),true);
+            return false ;
+        }
+        painter.translate(_picture.postion);     //Set the origin.
+        painter.rotate(_picture.angle);          //Set the angle.
+        painter.save();
+        if(_picture.disMode == Tile){
+            painter.drawTiledPixmap(QRectF(0,0,pixmap.width(),pixmap.height()),pixmap);
+        }else if(_picture.disMode == Stretch){
+            painter.drawTiledPixmap(QRectF(0,0,pixmap.width(),pixmap.height()),pixmap);
+        }else if(_picture.disMode == KeepAspectRatio){
+            QSize scaledSize = QSize(_picture.size);
+            scaledSize.scale(pixmap.size(), Qt::KeepAspectRatio);
+            QPoint topLeft((pixmap.width() - scaledSize.width()) / 2, (pixmap.height() - scaledSize.height()) / 2);
+            QRect targetRect(topLeft, scaledSize);
+            painter.drawPixmap(targetRect,pixmap);
+        }else{
+            painter.restore();
+            painter.translate(QPointF(0,0) - _picture.postion);     //Return to the origin before drawing.
+            addlog(QString("Picture display mode error.").toUtf8(),true);
+            return false;
+        }
+        painter.restore();
+        painter.translate(QPointF(0,0) - _picture.postion);     //Return to the origin before drawing.
+    }
+    return true;
+}
+
+/**
+ * @brief readPictrue
+ * @param dbfile
+ * @param page
+ * @return
+ */
+static bool readPictrue(QString dbfile, int page){
+    //Configure the database.
+    QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
+    QSqlDatabase db;
+    if(QSqlDatabase::contains(dbname)){
+        db = QSqlDatabase::database(dbname);
+    }else{
+        db = QSqlDatabase::addDatabase("QSQLITE",dbname);
+    }
+    //addlog(QString("BQDLayout name is %1").arg(dbname).toUtf8());
+    db.setDatabaseName(dbfile);   //Set the database name.
+    if(!db.open()){
+        addlog(QString("The BQDLayout file failed to open due to: %1").arg(db.lastError().text()).toUtf8(),true);
+        return false;
+    }
+    //addlog(QString("The BQDLayout file opened successfully: %1").arg(dbfile).toUtf8());
+
+    QSqlQuery query(db);
+    QString cmd = QString("select layer,picPath,var,varName,posX,posY,width,height,displayMode,angle,uuid "
+                          "from Picture "
+                          "where page = %1 "
+                          "order by layer ASC;"
+                          ).arg(page);
+    if(!query.exec(cmd)){
+        addlog(QString("Character query failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        if(db.isOpen()) db.close();
+        return false ;
+    }else{
+        getPicture().clear();
+        int error = 0 ;
+        while (query.next()) {
+            ++error;
+            typePicture tmp;
+            tmp.layer       = query.value(0).toInt();
+            tmp.PicPath     = query.value(1).toString().toUtf8();
+            tmp.var         = query.value(2).toBool();
+            tmp.varName     = query.value(3).toString().toUtf8();
+            tmp.postion     = QPointF(query.value(4).toDouble() * dpi.printerdpiX / 25.4 ,query.value(5).toDouble()* dpi.printerdpiY / 25.4);
+            tmp.size        = QSize(query.value(6).toDouble() * dpi.printerdpiX / 25.4 , query.value(7).toDouble() * dpi.printerdpiY / 25.4);
+            tmp.disMode     = static_cast<PicDisplayMode>(query.value(8).toInt());
+            tmp.angle       = query.value(9).toDouble();
+            tmp.uuid        = query.value(10).toString().toUtf8();
+            getPicture().append(tmp);
         }
         if(error == 0){
             return false;
@@ -1504,6 +1655,7 @@ BQDError createBQDLayoutFile(){
         create table if not exists [config] (
             id integer primary key check(id = 1) ,
             dpi integer not null ,
+            printRepetitions integer not null ,
             outputformat integer not null ,
             pagewidth double not null ,
             pageheight double not null,
@@ -1746,6 +1898,33 @@ BQDError createBQDLayoutFile(){
     }else{
         addlog(QString("Circle file created successfully.").toUtf8());
     }
+
+    //Attempt to create the Picture table.
+    cmd = R"(
+        create table if not exists [Picture] (
+            uuid text not null ,
+            page  integer not null ,
+            layer integer not null ,
+            picPath text not null ,
+            var bool not null ,
+            varName text ,
+            posX double not null ,
+            posY double not null ,
+            width double not null ,
+            height double not null ,
+            displayMode integer not null ,
+            angle double not null ,
+            primary key(uuid)
+        );
+    )";
+    if(!query.exec(cmd)){
+        addlog(QString("Picture file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        if(db.isOpen()) db.close();
+        return BQDELPErr ;
+    }else{
+        addlog(QString("Picture file created successfully.").toUtf8());
+    }
+
     appdel();
     if(db.isOpen()) db.close();
     return BQDOk;
@@ -1774,12 +1953,13 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
     QPageSize pagesize;         //PageSize.
     QMarginsF margins;          //Margin.
     int getDpi;                    //dpi.
-    if(!getconfig(dbfile,pagesize,margins,getDpi)){
+    int printRepetitions;                //Print repetitions
+    if(!getconfig(dbfile,pagesize,margins,getDpi,printRepetitions)){
         return BQDConfigErr;
     }
     if(getDpi <= 0) getDpi = 1200 ;     //Set very hight dpi.
-    QPrinter printer;     //Printer object.
-    printer.setResolution(getDpi);  //Set printer dpi.
+    QPrinter printer;                   //Printer object.
+    printer.setResolution(getDpi);      //Set printer dpi.
     printer.setOutputFormat(static_cast<QPrinter::OutputFormat>(opf));  //Set the print format.
     printer.setPageSize(pagesize);                  //Set the paper size.
     printer.setPageMargins(margins);                //Set the margin.
@@ -1809,7 +1989,7 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
     dpi.screendpiX = screen->logicalDotsPerInchX();
     dpi.screendpiY = screen->logicalDotsPerInchY();
 
-    int page = 1 ;          //Start page numbering; page 0 is the background and does not need to be printed.
+
     QPainter painter;       //Initialize the drawing tool.
     if(!painter.begin(&printer)){
         addlog(QString("Print failed: The print file is in use or printer configuration error.").toUtf8(),true);
@@ -1840,78 +2020,84 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
         addlog(QString("Debugging the print operation, no variables will be modified.").toUtf8());
         mapvar.clear();
     }
-
-    while(page){
-
-
-        bool recterr = false , lineerr = false , texterr = false , barcodeerr = false , roundedrecterr = false , datamatrixerr = false;
-        bool qrcodeerr = false , ellipseerr = false;
-        if(readRectangle(dbfile,page)){
-            recterr = false;
-        }else{
-            recterr = true;
-        }
-
-        if(readLine(dbfile,page)){
-            lineerr = false;
-        }else{
-            lineerr = true;
-        }
-
-        if(readStringText(dbfile,page)){
-            texterr = false;
-        }else{
-            texterr = true;
-        }
-
-        if(readBarcode(dbfile,page)){
-            barcodeerr = false;
-        }else{
-            barcodeerr = true;
-        }
-
-        if(readRoundedRect(dbfile,page)){
-            roundedrecterr = false ;
-        }else{
-            roundedrecterr = true;
-        }
-
-        if(readDataMatrix(dbfile,page)){
-            datamatrixerr = false ;
-        }else{
-            datamatrixerr = true;
-        }
-
-        if(readQRCode(dbfile,page)){
-            qrcodeerr = false;
-        }else{
-            qrcodeerr = true;
-        }
-
-        if(readEllipse(dbfile,page)){
-            ellipseerr = false;
-        }else{
-            ellipseerr = true;
-        }
-
-
-        if(recterr && lineerr && texterr && barcodeerr && roundedrecterr && datamatrixerr && qrcodeerr && ellipseerr){
-            break;
-        }else{
-            if(page > 1){
-                printer.newPage();
+    for(int i = 0 ; i < printRepetitions ; ++i){
+        if(i > 0) printer.newPage();
+        int page = 1 ;          //Start page numbering; page 0 is the background and does not need to be printed.
+        while(page){
+            bool recterr = false , lineerr = false , texterr = false , barcodeerr = false , roundedrecterr = false , datamatrixerr = false , pictureerr = false;
+            bool qrcodeerr = false , ellipseerr = false;
+            if(readRectangle(dbfile,page)){
+                recterr = false;
+            }else{
+                recterr = true;
             }
-            createRectangle(painter);
-            createRoundedRect(painter);
-            createEllipse(painter);
-            createLine(painter);
-            createStringText(painter,mapvar);
-            createBarCode(painter,mapvar);
-            createDataMatrix(painter,mapvar);
-            createQRCode(painter,mapvar);
-        }
 
-        ++page;
+            if(readLine(dbfile,page)){
+                lineerr = false;
+            }else{
+                lineerr = true;
+            }
+
+            if(readStringText(dbfile,page)){
+                texterr = false;
+            }else{
+                texterr = true;
+            }
+
+            if(readBarcode(dbfile,page)){
+                barcodeerr = false;
+            }else{
+                barcodeerr = true;
+            }
+
+            if(readRoundedRect(dbfile,page)){
+                roundedrecterr = false ;
+            }else{
+                roundedrecterr = true;
+            }
+
+            if(readDataMatrix(dbfile,page)){
+                datamatrixerr = false ;
+            }else{
+                datamatrixerr = true;
+            }
+
+            if(readQRCode(dbfile,page)){
+                qrcodeerr = false;
+            }else{
+                qrcodeerr = true;
+            }
+
+            if(readEllipse(dbfile,page)){
+                ellipseerr = false;
+            }else{
+                ellipseerr = true;
+            }
+
+            if(readPictrue(dbfile,page)){
+                pictureerr = false;
+            }else{
+                pictureerr = true;
+            }
+
+            if(recterr && lineerr && texterr && barcodeerr && roundedrecterr && datamatrixerr && qrcodeerr && ellipseerr && pictureerr){
+                break;
+            }else{
+                if(page > 1){
+                    printer.newPage();
+                }
+                createRectangle(painter);
+                createRoundedRect(painter);
+                createEllipse(painter);
+                createLine(painter);
+                createPicture(painter,mapvar,i);
+                createStringText(painter,mapvar,i);
+                createBarCode(painter,mapvar,i);
+                createDataMatrix(painter,mapvar,i);
+                createQRCode(painter,mapvar,i);
+            }
+            ++page;
+        }
     }
     painter.end();
     appdel();

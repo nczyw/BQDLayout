@@ -7,7 +7,7 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
-    FILEVERSION 1,0,0,2
+    FILEVERSION 1,0,0,3
     FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
     FILEFLAGS VS_FF_DEBUG
@@ -25,11 +25,11 @@ VS_VERSION_INFO VERSIONINFO
 
                 VALUE "CompanyName", "nczyw\0"
                 VALUE "FileDescription", "Create pdf or print\0"
-                VALUE "FileVersion", "1.0.0.2\0"
+                VALUE "FileVersion", "1.0.0.3\0"
                 VALUE "InternalName", "BQDLayout\0"
                 VALUE "OriginalFilename", "BQDLayout.dll\0"
                 VALUE "ProductName", "BQDLayout\0"
-                VALUE "ProductVersion", "1.0.0.2\0"
+                VALUE "ProductVersion", "1.0.0.3\0"
                 VALUE "LegalCopyright", "Copyright 2024 nczyw All rights reserved.\0"
 
 

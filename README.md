@@ -1,6 +1,6 @@
 # BQDLayout
 ## 用于生成pdf或者打印文件的库  
-基于[BQDCode开源库](https://github.com/nczyw/BQDCode),使用Qt的GUI来生成dpf和打印文件
+基于[BQDCode开源库](https://github.com/nczyw/BQDCode),使用Qt的GUI来生成pdf和打印文件
 ## 库介绍
  * 通过调用createBQDLayoutFile函数,可以轻松的创建一个bqd格式的文件,
    用于存放所有打印内容,基于SQLITE.
@@ -40,7 +40,7 @@
  * `fontName`:类型:`text`;条码的字体名字,比如`Arial`.
  * `fontSize`:类型:`integer`;条码的字体大小.
  * `fontWeight`:类型:`integer`;条码的字符是否加粗,参考Qt的QFont.
- * `fontItalic`:类型:`bool`;条码的字体是否加粗.
+ * `fontItalic`:类型:`bool`;条码的字体是否使用斜体.
  * `type`:类型:`integer`;条码的类型,比如BARCODE_128,表示类型5.
  * `disPlayText`:类型:`bool`;条码是否显示文本.
  * `argin`:类型:`integer`;条码边缘留空距离,单位MM.

@@ -1,5 +1,5 @@
 #include "bqdlayout.h"
-#include <bqdcode.h>
+#include "bqdcode.h"
 #include <QFileDialog>
 #include <QObject>
 #include <QSqlDatabase>

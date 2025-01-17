@@ -18,7 +18,7 @@ add_subdirectory(external/spdlog)
 add_subdirectory(external/BQDCode)
 
 if (MSVC)
-#  set(CMAKE_DEBUG_POSTFIX "_d")
+  set(CMAKE_DEBUG_POSTFIX "_d")
 endif(MSVC)
 
 add_library(${PROJECT_NAME} SHARED
@@ -26,19 +26,20 @@ add_library(${PROJECT_NAME} SHARED
   inc/bqdlayout.h
   version.rc
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    spdlog
-    BQDCode
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PUBLIC
                         Qt${QT_VERSION_MAJOR}::Sql
                         Qt${QT_VERSION_MAJOR}::PrintSupport
+                        spdlog
+                        BQDCode
+)
+target_include_directories(${PROJECT_NAME} PRIVATE
+                            inc
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE BQDLAYOUT_LIBRARY)
 
 # Create test executable
+#[[
 set(TestDll "BQDDllTest")
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TestDll}
@@ -60,3 +61,4 @@ target_link_libraries(${TestDll} PRIVATE
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${TestDll})
 endif()
+]]#

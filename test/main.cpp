@@ -67,8 +67,9 @@ int main(int argc, char *argv[]){
         hBQD = loadLibraryIfExists(secondaryLib);
     }
 
+
     if (hBQD == NULL) {
-        std::cerr << "Both libraries are missing or failed to load." << std::endl;
+        std::cerr << "All libraries cannot be loaded." << std::endl;
         return 1; // Return with error code
     }
 

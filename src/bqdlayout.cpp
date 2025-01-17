@@ -229,7 +229,7 @@ static bool updatesizeBarCode(typeBarCode barcode ,struct Barcode_Item * bc);   
 static bool renderBarCode(typeBarCode barcode , QPainter &painter ,struct Barcode_Item * bc);   //Draw the entire barcode.
 static bool drawBarBarCode(typeBarCode barcode ,QPainter &painter , struct Barcode_Item * bc);  //Draw the barcode section of the barcode.
 static bool drawtextBarCode(typeBarCode barcode , QPainter &painter);                           //Draw the character section of the barcode.
-static bool createBarCode(QPainter &painter ,const QMap<QString,QString> var);                  //Create a barcode.
+static bool createBarCode(QPainter &painter ,const QMap<QString,QString> var , int CurRepCount);                  //Create a barcode.
 static bool readBarcode(QString dbfile, int page);                                              //Read the barcode from a specified page.
 
 //DataMatrix list
@@ -239,7 +239,7 @@ static QVector<typeDataMatrix> & getdatamatrix(){
 }
 static int widthDataMatrix = 0;                         //DataMatrix width.
 static int heightDataMatrix = 0;                        //DataMatrix height.
-static bool createDataMatrix(QPainter &painter, const QMap<QString, QString> var);  //Create a DataMatrix code.
+static bool createDataMatrix(QPainter &painter, const QMap<QString, QString> var, int CurRepCount);  //Create a DataMatrix code.
 static bool readDataMatrix(QString dbfile, int page);                               //Read DataMatrix from a specified page.
 
 //QR Code list
@@ -247,7 +247,7 @@ static QVector<typeQRCode> & getqrcode(){
     static QVector<typeQRCode> qrcode;
     return qrcode;
 }
-static bool createQRCode(QPainter &painter , const QMap<QString, QString> var);     //Create a QR code.
+static bool createQRCode(QPainter &painter , const QMap<QString, QString> var, int CurRepCount);     //Create a QR code.
 static bool readQRCode(QString dbfile, int page);                                   //Read QR code from a specified page.
 
 
@@ -256,7 +256,7 @@ static QVector<typeStringText> & getstringtext(){
     static QVector<typeStringText> stringtext;
     return stringtext;
 }
-static bool createStringText(QPainter &painter , const QMap<QString,QString> var);  //Create a character.
+static bool createStringText(QPainter &painter , const QMap<QString,QString> var, int CurRepCount);  //Create a character.
 static bool readStringText(QString dbfile, int page);                               //Read character from a specified page.
 
 //Rectangle list
@@ -606,7 +606,7 @@ static bool drawtextBarCode(typeBarCode barcode , QPainter &painter){
  * @param var               Variable.
  * @return bool             Was it successful.
  */
-static bool createBarCode(QPainter &painter, const QMap<QString, QString> var){
+static bool createBarCode(QPainter &painter, const QMap<QString, QString> var , int CurRepCount){
     for (auto & _barcode:getbarcode()) {
         if(!ptest){
             if(_barcode.var){
@@ -739,7 +739,7 @@ static bool readBarcode(QString dbfile, int page){
  * @param var                   Variable.
  * @return bool                 Was it successful.
  */
-static bool createDataMatrix(QPainter &painter , const QMap<QString,QString> var){
+static bool createDataMatrix(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
     for (auto & _datamatrix: getdatamatrix()) {
         if(!ptest){
             if(_datamatrix.var){
@@ -884,7 +884,7 @@ static bool readDataMatrix(QString dbfile, int page){
  * @param var               Variable.
  * @return bool             Was it successful.
  */
-static bool createQRCode(QPainter &painter , const QMap<QString,QString> var){
+static bool createQRCode(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
     for (auto & _qrcode: getqrcode()) {
         if(!ptest){
             if(_qrcode.var){
@@ -1011,7 +1011,7 @@ static bool readQRCode(QString dbfile, int page){
  * @param var                   Variable.
  * @return bool                 Was it successful.
  */
-static bool createStringText(QPainter &painter , const QMap<QString,QString> var){
+static bool createStringText(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
     for (auto & _stringtext: getstringtext()) {
         if(!ptest){
             if(_stringtext.var){

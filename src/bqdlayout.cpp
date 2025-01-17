@@ -1616,12 +1616,11 @@ static void addlog(QByteArray log , const bool &err){
  * @return BQDError
  */
 BQDError createBQDLayoutFile(){
+    appnew();
     if(!dllcheck()){        //The key DLL does not exist.
         addlog(QString("BQDCode.dll does not exist, and the program cannot run.").toUtf8(),true);
         return BQDDLLErr;
     }
-    appnew();
-
     QString filename = QFileDialog::getSaveFileName(
         nullptr,
         QString("Save the file."),
@@ -1942,13 +1941,13 @@ BQDError createBQDLayoutFile(){
  *                      var1=tmp1,var2=temp2,var3=temp3
  * @return  BQDError
  */
-BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, const char * var )
-{
+BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, const char * var ){
+    appnew();
     if(!dllcheck()){        //The key DLL does not exist.
         addlog(QString("BQDCode.dll does not exist, and the program cannot run.").toUtf8(),true);
         return BQDDLLErr;
     }
-    appnew();
+
     //Read the configuration file.
     QPageSize pagesize;         //PageSize.
     QMarginsF margins;          //Margin.

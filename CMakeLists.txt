@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql PrintSupport)
 
-option(DISABLE_SubMoudle_INSTALL "Disable install submodule libray" ON)
+set(DISABLE_SubMoudle_INSTALL ON CACHE BOOL "Disable install submodule libray" FORCE)
 add_subdirectory(external/spdlog)
 add_subdirectory(external/BQDCode)
 

@@ -26,6 +26,7 @@ add_library(${PRONAME} SHARED
   src/bqdlayout.cpp
   inc/bqdlayout.h
   version.rc
+  CHANGELOG.md
 )
 target_link_libraries(${PRONAME} PRIVATE
                         Qt${QT_VERSION_MAJOR}::Sql
@@ -46,7 +47,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TestDll}
         MANUAL_FINALIZATION
         test/main.cpp
-        CHANGELOG.md
     )
 else()
 

@@ -15,7 +15,7 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql PrintSupport)
 
 add_subdirectory(external/spdlog)
-add_subdirectory(external/BWDCode)
+add_subdirectory(external/BQDCode)
 
 if (MSVC)
 #  set(CMAKE_DEBUG_POSTFIX "_d")

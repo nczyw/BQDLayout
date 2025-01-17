@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "dmtxstatic.h": "c",
+        "bqdcode.h": "c"
+    }
+}

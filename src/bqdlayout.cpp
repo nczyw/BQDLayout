@@ -215,7 +215,6 @@ static bool ptest = false ;                 //Test print.
 static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf, int &dpi, int &printRepetitions);  //Read printing parameters.
 //dpi
 typeDPI dpi = {0};
-static bool dllcheck(void); //Check if BQDDLL exists.
 //Barcode list
 static QVector <typeBarCode> & getbarcode(){
     static QVector <typeBarCode> barCode ;
@@ -329,7 +328,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
 
     QSqlQuery query(db);
     QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom,dpi,printRepetitions "
-                          "from config"
+                          "from config where id=1 "
                           );
     if(!query.exec(cmd)){
         addlog(QString("Configuration query failed due to the following reason:%1").arg(query.lastError().text()).toUtf8(),true);
@@ -366,23 +365,6 @@ static void appnew(void){
 
 static void appdel(void){
     return ;        //Cannot delete the GUI instance, return directly.
-}
-
-/**
- * @brief dllcheck  Check if BQDDLL exists.
- * @return bool     Whether it exists.
- */
-static bool dllcheck(void){
-    QDir dir(QCoreApplication::applicationDirPath());  // Get the current working directory of the program.
-    QString fileName = "BQDCode.dll";
-    QFile file(dir.filePath(fileName));
-    bool Ndll = false ;
-    Ndll = file.exists();
-    if(!Ndll){
-        addlog(dir.path().toUtf8());
-        return false;
-    }
-    return true;
 }
 
 /**
@@ -1617,10 +1599,6 @@ static void addlog(QByteArray log , const bool &err){
  */
 BQDError createBQDLayoutFile(){
     appnew();
-    if(!dllcheck()){        //The key DLL does not exist.
-        addlog(QString("BQDCode.dll does not exist, and the program cannot run.").toUtf8(),true);
-        return BQDDLLErr;
-    }
     QString filename = QFileDialog::getSaveFileName(
         nullptr,
         QString("Save the file."),
@@ -1670,6 +1648,12 @@ BQDError createBQDLayoutFile(){
         return BQDCBCErr ;
     }else{
         addlog(QString("Configuration file created successfully.").toUtf8());
+        cmd = "insert into [config](id,dpi,printRepetitions,outputformat,pagewidth,pageheight,margleft,margtop,margright,margbottom) values (1,1200,1,1,210,270,1,1,1,1)";
+        if(!query.exec(cmd)){
+            addlog(QString("The record already exists and does not need to be added again.").toUtf8());
+        }else{
+            addlog(QString("Default configuration added successfully.").toUtf8());
+        }
     }
 
 
@@ -1700,11 +1684,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Barcode file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Barcode table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDCBCErr ;
     }else{
-        addlog(QString("Barcode file created successfully.").toUtf8());
+        addlog(QString("Barcode table created successfully or the table already exists.").toUtf8());
     }
 
     //Attempt to create the StringText table.
@@ -1729,11 +1713,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Character file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Character table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDCTErr ;
     }else{
-        addlog(QString("Character file created successfully.").toUtf8());
+        addlog(QString("Character table created successfully or the table already exists.").toUtf8());
     }
 
     //Attempt to create the Rectangle table.
@@ -1754,11 +1738,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Rectangle file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Rectangle table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDCRTErr ;
     }else{
-        addlog(QString("Rectangle file created successfully.").toUtf8());
+        addlog(QString("Rectangle table created successfully or the table already exists.").toUtf8());
     }
 
 
@@ -1779,11 +1763,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Line file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Line table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDCLErr ;
     }else{
-        addlog(QString("Line file created successfully.").toUtf8());
+        addlog(QString("Line table created successfully or the table already exists.").toUtf8());
     }
 
 
@@ -1807,11 +1791,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Rounded rectangle file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Rounded rectangle table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDRRErr ;
     }else{
-        addlog(QString("Rounded rectangle file created successfully.").toUtf8());
+        addlog(QString("Rounded rectangle table created successfully or the table already exists.").toUtf8());
     }
 
 
@@ -1835,11 +1819,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("DataMatrix file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("DataMatrix table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDDMErr ;
     }else{
-        addlog(QString("DataMatrix file created successfully.").toUtf8());
+        addlog(QString("DataMatrix table created successfully or the table already exists.").toUtf8());
     }
 
     //Attempt to create the QRCode table.
@@ -1865,11 +1849,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("QRCode file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("QRCode table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDQRCErr ;
     }else{
-        addlog(QString("QRCode file created successfully.").toUtf8());
+        addlog(QString("QRCode table created successfully or the table already exists.").toUtf8());
     }
 
 
@@ -1891,11 +1875,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Circle file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Circle table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDELPErr ;
     }else{
-        addlog(QString("Circle file created successfully.").toUtf8());
+        addlog(QString("Circle table created successfully or the table already exists.").toUtf8());
     }
 
     //Attempt to create the Picture table.
@@ -1917,11 +1901,11 @@ BQDError createBQDLayoutFile(){
         );
     )";
     if(!query.exec(cmd)){
-        addlog(QString("Picture file creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
+        addlog(QString("Picture table creation failed due to: %1").arg(query.lastError().text()).toUtf8(),true);
         if(db.isOpen()) db.close();
         return BQDELPErr ;
     }else{
-        addlog(QString("Picture file created successfully.").toUtf8());
+        addlog(QString("Picture table created successfully or the table already exists.").toUtf8());
     }
 
     appdel();
@@ -1943,11 +1927,6 @@ BQDError createBQDLayoutFile(){
  */
 BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, const char * var ){
     appnew();
-    if(!dllcheck()){        //The key DLL does not exist.
-        addlog(QString("BQDCode.dll does not exist, and the program cannot run.").toUtf8(),true);
-        return BQDDLLErr;
-    }
-
     //Read the configuration file.
     QPageSize pagesize;         //PageSize.
     QMarginsF margins;          //Margin.

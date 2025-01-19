@@ -30,7 +30,6 @@ enum BQDError{
     BQDOk,          //BQD Normal
     BQDConfigErr,   //BQD There is an error in the printer configuration: incorrect paper size and margins.
     BQDVARErr,      //BQD Variable format error.
-    BQDDLLErr,      //BQD The dependent `BQDCode.dll` does not exist.
     BQDNFErr,       //BQD Failed to create the BQD file because the save path was not selected.
     BQDPDFPathErr,  //BQD The PDF file path is incorrect.
     BQDPDFOErr,     //BQD The print file is in use or printer configuration error.

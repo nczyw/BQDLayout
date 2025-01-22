@@ -34,7 +34,7 @@ target_link_libraries(${PRONAME} PRIVATE
                         spdlog
                         BQDCode
 )
-target_include_directories(${PRONAME} PRIVATE
+target_include_directories(${PRONAME} PUBLIC
                             inc
 )
 
@@ -57,9 +57,31 @@ else()
 endif()
 
 target_link_libraries(${TestDll} PRIVATE
-
+#    Qt${QT_VERSION_MAJOR}::Widget
 )
+
+#[[
+set(TestBQD "BQDTest")
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    qt_add_executable(${TestBQD}
+        MANUAL_FINALIZATION
+        test/bqdtest.cpp
+    )
+else()
+    add_executable(${TestBQD}
+        test/bqdtest.cpp
+        CHANGELOG.md
+    )
+endif()
+
+
+target_link_libraries(${TestBQD} PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widget
+    ${PRONAME}
+)
+]]#
 if(QT_VERSION_MAJOR EQUAL 6)
+#    qt_finalize_executable(${TestBQD})
     qt_finalize_executable(${TestDll})
 endif()
 

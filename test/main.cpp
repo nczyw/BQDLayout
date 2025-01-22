@@ -1,7 +1,6 @@
 #include <iostream>
 #include <windows.h>
 #include <filesystem>
-
 #ifdef _WIN32
 #define MYAPI __cdecl
 #else
@@ -33,9 +32,9 @@ typedef BQDError  (MYAPI *printfBQDCodeFunc)(const char * dbfile ,
                                       const char * var
                                       );
 
-typedef const char * (*getVarlistFunc)(const char * dbfile);
+typedef const char * (MYAPI *getVarlistFunc)(const char * dbfile);
 
-typedef BQDError (MYAPI *settingsBQDLayout) (const char * dbfile);
+typedef BQDError (MYAPI *settingsBQDLayoutFunc) (const char * dbfile);
 
 namespace fs = std::filesystem ;
 
@@ -75,17 +74,19 @@ int main(int argc, char *argv[]){
     createBQDLayoutFileFunc createBQDLayoutFile = (createBQDLayoutFileFunc) GetProcAddress(hBQD,"createBQDLayoutFile");
     printfBQDCodeFunc printfBQDCode = (printfBQDCodeFunc) GetProcAddress(hBQD,"printfBQDCode");
     getVarlistFunc getVarlist = (getVarlistFunc) GetProcAddress(hBQD,"getVarlist");
-    if(createBQDLayoutFile == NULL || printfBQDCode == NULL || getVarlist == NULL){
+    settingsBQDLayoutFunc settingsBQDLayout = (settingsBQDLayoutFunc) GetProcAddress(hBQD,"settingsBQDLayout");
+    if(createBQDLayoutFile == NULL || printfBQDCode == NULL || getVarlist == NULL || settingsBQDLayout == NULL){
         std::cerr << "function exp fail" << std::endl;
         return 2 ;
     }
        std::cout << createBQDLayoutFile() << std::endl;
-    const char * tmp = "Var=1234567890";
+    //const char * tmp = "Var=1234567890";
     std::cout << printfBQDCode("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd","C:/Users/Sublime/Desktop/pdftest/NewBQD.pdf",1,nullptr) << std::endl;//Microsoft Print to PDF
     //std::cout << printfBQDCode("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd","Microsoft Print to PDF",0,tmp) << std::endl;
     const char * var = NULL;
     var = getVarlist("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd");
     std::string str = var;
     std::cout <<  var << std::endl;
+    settingsBQDLayout(NULL);
     return 0;
 }

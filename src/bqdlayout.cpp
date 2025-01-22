@@ -26,6 +26,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QUuid>
+#include <QMainWindow>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/daily_file_sink.h>
@@ -2182,7 +2183,12 @@ const char *getVarlist(const char * dbfile)
  */
 BQDError settingsBQDLayout(const char *dbfile)
 {
+    appnew();
+    QMainWindow BQDLayout;
+
+    BQDLayout.show();
+    QApplication::exec();
     //TDO
-    (void)dbfile;
+    //(void)dbfile;
     return BQDSETLAYErr;
 }

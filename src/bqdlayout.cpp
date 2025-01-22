@@ -301,6 +301,8 @@ static bool readPictrue(QString dbfile, int page);                              
 
 static void addlog(QByteArray log , const bool &err = false );  //Add a log.
 
+
+
 /**
  * @brief getconfig         Read printing parameters.
  * @param dbfile            Printer configuration file.
@@ -2184,10 +2186,16 @@ const char *getVarlist(const char * dbfile)
 BQDError settingsBQDLayout(const char *dbfile)
 {
     appnew();
-    QMainWindow BQDLayout;
+    static QMainWindow * BQDLayout = new QMainWindow;
 
-    BQDLayout.show();
-    QApplication::exec();
+    BQDLayout->setWindowModality(Qt::ApplicationModal);
+    BQDLayout->setWindowFlags(Qt::Dialog);
+
+
+    BQDLayout->setWindowTitle("BQDLayout Settings");
+
+    BQDLayout->show();
+    //QApplication::exec();
     //TDO
     //(void)dbfile;
     return BQDSETLAYErr;

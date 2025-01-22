@@ -1,13 +1,9 @@
-#include "bqdlayout.h"
-#include <QMainWindow>
-#include <cstddef>
+#include "mainwindow.h"
+#include <QApplication>
 int main(int argc, char *argv[]){
     QApplication app(argc, argv);
 
-    QMainWindow mainWindow;
-    mainWindow.show();
-
-
-    settingsBQDLayout(NULL);
+    MainWindow w;
+    w.show();
     return app.exec(); // 等待应用程序关闭
 }

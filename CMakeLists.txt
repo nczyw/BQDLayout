@@ -57,18 +57,22 @@ else()
 endif()
 
 target_link_libraries(${TestDll} PRIVATE
-#    Qt${QT_VERSION_MAJOR}::Widget
+#    Qt${QT_VERSION_MAJOR}::Widgets
 )
 
-#[[
+
 set(TestBQD "BQDTest")
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TestBQD}
         MANUAL_FINALIZATION
+        test/mainwindow.cpp
+        test/mainwindow.h
         test/bqdtest.cpp
     )
 else()
     add_executable(${TestBQD}
+        test/mainwindow.cpp
+        test/mainwindow.h
         test/bqdtest.cpp
         CHANGELOG.md
     )
@@ -76,10 +80,10 @@ endif()
 
 
 target_link_libraries(${TestBQD} PRIVATE
-    Qt${QT_VERSION_MAJOR}::Widget
+    Qt${QT_VERSION_MAJOR}::Widgets
     ${PRONAME}
 )
-]]#
+
 if(QT_VERSION_MAJOR EQUAL 6)
 #    qt_finalize_executable(${TestBQD})
     qt_finalize_executable(${TestDll})

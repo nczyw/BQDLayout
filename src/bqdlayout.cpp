@@ -1,5 +1,6 @@
 #include "bqdlayout.h"
 #include "bqdcode.h"
+
 #include <QFileDialog>
 #include <QObject>
 #include <QSqlDatabase>
@@ -26,7 +27,23 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QUuid>
+
+#include <QApplication>
 #include <QMainWindow>
+#include <QDialog>
+#include <QEventLoop>
+#include <QObject>
+#include <QCloseEvent>
+#include <QMenuBar>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QMap>
+#include <QSpinBox>
+#include <QComboBox>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/daily_file_sink.h>
@@ -662,7 +679,7 @@ static bool readBarcode(QString dbfile, int page){
 
     QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,type,disPlayText,argin,widthScalef,height,angle,uuid "
                           "from BarCode "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
 
@@ -812,7 +829,7 @@ static bool readDataMatrix(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,argin,scalef,angle,uuid "
                           "from DataMatrix "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
 
@@ -937,7 +954,7 @@ static bool readQRCode(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,QRVersion,QRlevel,QRhint,CaseSensitive,scalef,angle,uuid "
                           "from QRCode "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
 
@@ -1059,7 +1076,7 @@ static bool readStringText(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,angle,uuid "
                           "from StringText "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
     if(!query.exec(cmd)){
@@ -1156,7 +1173,7 @@ static bool readRectangle(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,posX,posY,posWidth,posHeight,bColor,fColor,penWidth,angle,uuid "
                           "from Rectangle "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
 
@@ -1250,7 +1267,7 @@ static bool readRoundedRect(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,posX,posY,posWidth,posHeight,xRadius,yRadius,bColor,fColor,penWidth,angle,uuid "
                           "from RoundedRect "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
 
@@ -1345,7 +1362,7 @@ static bool readLine(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,posX,posY,iX,iY,fColor,penWidth,angle,uuid "
                           "from Line "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
     if(!query.exec(cmd)){
@@ -1430,7 +1447,7 @@ static bool readEllipse(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,posX,posY,width,height,bColor,fColor,penWidth,angle,uuid "
                           "from Ellipse "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
     if(!query.exec(cmd)){
@@ -1550,7 +1567,7 @@ static bool readPictrue(QString dbfile, int page){
     QSqlQuery query(db);
     QString cmd = QString("select layer,picPath,var,varName,posX,posY,width,height,displayMode,angle,uuid "
                           "from Picture "
-                          "where page = %1 "
+                          "where page = %1 or page < 0 "
                           "order by layer ASC;"
                           ).arg(page);
     if(!query.exec(cmd)){
@@ -1588,12 +1605,19 @@ static bool readPictrue(QString dbfile, int page){
  * @param err       Is it an error option.
  */
 static void addlog(QByteArray log , const bool &err){
+    static bool once_setting = true;
+    if(once_setting){
+        once_setting = false;
+        spdlog::flush_every(std::chrono::seconds(1));
+    }
+
     qDebug() << QString(log);
     if(err){
         BQDlogger->error(log.data());
     }else{
         BQDlogger->info(log.data());
     }
+    BQDlogger->flush();
 }
 
 /**
@@ -2178,6 +2202,232 @@ const char *getVarlist(const char * dbfile)
     return getPrintVal().constData();
 }
 
+class MyDialog :public QDialog{
+    Q_OBJECT
+public:
+    MyDialog(QMap<QString,QString>,QWidget *parent = nullptr) {
+        layoutconfig();
+        retranslateUi(this);
+    }
+private:
+    QLabel * labelDPI = new QLabel(this);
+    QSpinBox * spinboxDPI = new QSpinBox(this);
+
+    QLabel * labelRepetitions = new QLabel(this);
+    QSpinBox * spinboxRepetitions = new QSpinBox(this);
+
+    QLabel * labelFormat = new QLabel(this);
+    QComboBox * comboboxFormat = new QComboBox(this);
+
+    QLabel * labelPageSizeId = new QLabel(this);
+    QComboBox * comboboxPageSizeId = new QComboBox(this);
+
+    QLabel * labelPageWidth = new QLabel(this);
+    QSpinBox * spinboxPageWidth = new QSpinBox(this);
+
+    QLabel * labelPageHeight = new QLabel(this);
+    QSpinBox * spinboxPageHeight = new QSpinBox(this);
+
+    QLabel * labelMargeLeft = new QLabel(this);
+    QSpinBox * spinboxMargeLeft = new QSpinBox(this);
+
+    QLabel * labelMargeTop = new QLabel(this);
+    QSpinBox * spinboxMargeTop = new QSpinBox(this);
+
+    QLabel * labelMargeRight = new QLabel(this);
+    QSpinBox * spinboxMargeRight = new QSpinBox(this);
+
+    QLabel * labelMargeBottom = new QLabel(this);
+    QSpinBox * spinboxMargeBottom = new QSpinBox(this);
+
+    QPushButton * btnOk = new QPushButton(this);
+
+private:
+    void retranslateUi(QDialog *Dialog){
+        Q_UNUSED(Dialog);
+        labelDPI->setText(tr("DPI:"));
+        labelRepetitions->setText(tr("Repetitions:"));
+        labelFormat->setText(tr("Format:"));
+        int formatindex = comboboxFormat->currentIndex();
+        formatindex = formatindex < 0 ? 0 : formatindex;
+        comboboxFormat->clear();
+        comboboxFormat->addItem(tr("Printer"));
+        comboboxFormat->addItem(tr("PDF"));
+        comboboxFormat->setCurrentIndex(formatindex);
+        labelPageSizeId->setText(tr("PageSizeId:"));
+        labelPageWidth->setText(tr("PageWidth(MM):"));
+        labelPageHeight->setText(tr("PageHeight(MM):"));
+        labelMargeLeft->setText(tr("MargeLeft(MM):"));
+        labelMargeTop->setText(tr("MargeTop(MM):"));
+        labelMargeRight->setText(tr("MargeRight(MM):"));
+        labelMargeBottom->setText(tr("MargeBottom(MM):"));
+        btnOk->setText(tr("Ok"));
+    }
+    void layoutconfig(){
+        auto griadwidget = new QGridLayout(this);
+        griadwidget->addWidget(labelDPI,0,0,1,1);labelDPI->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxDPI,0,1,1,1);spinboxDPI->setRange(0,1200);
+        griadwidget->addWidget(labelRepetitions,1,0,1,1);labelRepetitions->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxRepetitions,1,1,1,1); spinboxRepetitions->setRange(1,99);
+        griadwidget->addWidget(labelFormat,2,0,1,1);labelFormat->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(comboboxFormat,2,1,1,1);
+
+        QStringList pagesizeidlist;
+        pagesizeidlist << "Custom" << "A0" << "A1" <<"A2" << "A3" << "A4" << "A5" << "A6" << "A7" << "A8";
+        comboboxPageSizeId->addItems(pagesizeidlist);
+
+        griadwidget->addWidget(labelPageSizeId,3,0,1,1); labelPageSizeId->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(comboboxPageSizeId,3,1,1,1);
+
+        griadwidget->addWidget(labelPageWidth,4,0,1,1);labelPageWidth->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxPageWidth,4,1,1,1);spinboxPageWidth->setRange(1,10000);
+
+        griadwidget->addWidget(labelPageHeight,5,0,1,1);labelPageHeight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxPageHeight,5,1,1,1);spinboxPageHeight->setRange(1,10000);
+
+        griadwidget->addWidget(labelMargeLeft,6,0,1,1);labelMargeLeft->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxMargeLeft,6,1,1,1);spinboxMargeLeft->setRange(0,10000);
+
+        griadwidget->addWidget(labelMargeTop,7,0,1,1);labelMargeTop->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxMargeTop,7,1,1,1);spinboxMargeTop->setRange(0,10000);
+
+        griadwidget->addWidget(labelMargeRight,8,0,1,1);labelMargeRight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxMargeRight,8,1,1,1);spinboxMargeRight->setRange(0,10000);
+
+        griadwidget->addWidget(labelMargeBottom,9,0,1,1);labelMargeBottom->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(spinboxMargeBottom,9,1,1,1);spinboxMargeBottom->setRange(0,10000);
+
+        griadwidget->addWidget(btnOk,10,1,1,1);
+
+        griadwidget->setColumnStretch(0, 0);griadwidget->setColumnStretch(1, 1);
+
+        setMaximumHeight(300);
+    }
+protected:
+    void changeEvent(QEvent * e) override {
+        switch (e->type()) {
+        case QEvent::LanguageChange :
+            retranslateUi(this);
+            break;
+        default:
+            break;
+        }
+        QDialog::changeEvent(e);
+    }
+};
+
+class MyMainWindow : public QMainWindow {
+    Q_OBJECT
+public:
+    MyMainWindow(const char *dbfile) {
+        setWindowModality(Qt::ApplicationModal);
+        BQDFile = QString(dbfile);
+        addlog(QString("BQDFile path: %1").arg(BQDFile).toUtf8());
+        setWindowTitle(tr("BQDLayout settings") + "    (" + BQDFile + ")");
+        filemenuconfig(); //Setting up a menu
+        configmenuconfig();
+        layoutconfig();
+        retranslateUi(this);
+    }
+    // Fake a blocking window event.
+    void showModal() {
+        // Simulate modal behavior, blocking the window until user interaction.
+        QEventLoop loop;
+        connect(this, &MyMainWindow::windowClosed, &loop, &QEventLoop::quit);
+        show(); // "Show the main window."
+        loop.exec(); // "Start the event loop, blocking until the window is closed."
+    }
+private:
+    QString BQDFile = QString();
+    QMenu *menuFile = nullptr;
+
+    QAction * actionFileOpen    = new QAction(menuFile);
+    QAction * actionFileSave    = new QAction(menuFile);
+    QAction * actionFileSaveAs  = new QAction(menuFile);
+    QAction * actionFileClose   = new QAction(menuFile);
+
+    QMenu *menuConfig = nullptr;
+    QAction *actionConfig       = new QAction(menuConfig);
+
+
+private:
+    void retranslateUi(QMainWindow *MainWindow){
+        Q_UNUSED(MainWindow);
+        menuFile->setTitle(tr("&File"));
+        actionFileOpen->setText(tr("&Open file"));
+        actionFileClose->setText(tr("&Close file"));
+        actionFileSave->setText(tr("&Save file"));
+        actionFileSaveAs->setText(tr("&Save as file"));
+        actionConfig->setText(tr("&Config"));
+    }
+    void filemenuconfig(){
+        menuFile = menuBar()->addMenu("&File");
+        actionFileOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
+        menuFile->addAction(actionFileOpen);
+        connect(actionFileOpen, &QAction::triggered, this, [&](){
+            QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), BQDFile, tr("BQD Files (*.bqd)"));
+            if (!fileName.isEmpty()) {
+
+            }
+        });
+
+        actionFileSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+        menuFile->addAction(actionFileSave);
+        connect(actionFileSave, &QAction::triggered, this, [&](){
+
+        });
+
+        menuFile->addAction(actionFileSaveAs);
+        connect(actionFileSaveAs, &QAction::triggered, this, [&](){
+            QString fileName = QFileDialog::getSaveFileName(this, tr("Save as File"), BQDFile, tr("BQD Files (*.bqd)"));
+            if (!fileName.isEmpty()) {
+
+            }
+        });
+
+        menuFile->addAction(actionFileClose);
+        connect(actionFileClose, &QAction::triggered, this, [&](){
+
+        });
+
+    }
+
+    void configmenuconfig(){
+        menuConfig = menuBar()->addMenu("&Config");
+        menuConfig->addAction(actionConfig);
+        connect(actionConfig, &QAction::triggered, this, [&](){
+            QMap<QString,QString> config;
+            MyDialog dialog(config,this);
+            dialog.exec();
+        });
+    }
+
+    void layoutconfig(){
+        auto widget = new QWidget;
+        auto griadwidget = new QGridLayout(widget);
+
+        setCentralWidget(widget);
+    }
+private slots:
+    void closeEvent(QCloseEvent *event) override {
+        emit windowClosed();
+        event->accept(); // "Allow the window to close."
+    }
+signals:
+    void windowClosed();
+
+protected:
+    void changeEvent(QEvent * e) override {
+        switch (e->type()) {
+        case QEvent::LanguageChange :
+            retranslateUi(this);
+            break;
+        default:
+            break;
+        }
+        QMainWindow::changeEvent(e);
+    }
+};
 /**
  * @brief settingsBQDLayout     Adjust the layout.
  * @param dbfile                Print the configuration file.
@@ -2186,17 +2436,10 @@ const char *getVarlist(const char * dbfile)
 BQDError settingsBQDLayout(const char *dbfile)
 {
     appnew();
-    static QMainWindow * BQDLayout = new QMainWindow;
-
-    BQDLayout->setWindowModality(Qt::ApplicationModal);
-    BQDLayout->setWindowFlags(Qt::Dialog);
-
-
-    BQDLayout->setWindowTitle("BQDLayout Settings");
-
-    BQDLayout->show();
-    //QApplication::exec();
+    MyMainWindow  BQDLayout(dbfile) ;
+    BQDLayout.showModal();
     //TDO
     //(void)dbfile;
     return BQDSETLAYErr;
 }
+#include "bqdlayout.moc"

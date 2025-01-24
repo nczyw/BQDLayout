@@ -39,7 +39,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QMap>
-#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QComboBox>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -2202,14 +2202,42 @@ const char *getVarlist(const char * dbfile)
     return getPrintVal().constData();
 }
 
+//Printer settings class
 class MyDialog :public QDialog{
     Q_OBJECT
+private:
+    //PageSize
+    QVector<QPair<QString, QPair<double, double>>> paperSizes = {
+        {"A0", {841, 1189}},
+        {"A1", {594, 841}},
+        {"A2", {420, 594}},
+        {"A3", {297, 420}},
+        {"A4", {210, 297}},
+        {"A5", {148, 210}},
+        {"A6", {105, 148}},
+        {"A7", {74, 105}},
+        {"A8", {52, 74}}
+    };
 public:
-    MyDialog(QMap<QString,QString>,QWidget *parent = nullptr) {
-        layoutconfig();
-        retranslateUi(this);
+    MyDialog(QMap<QString,QString> _config,QWidget *parent = nullptr):
+        QDialog(parent),
+        config(_config)
+    {
+        layoutconfig();         //layout config
+        retranslateUi(this);    //translate UI
+        datainit();             //data init
+        signalconfig();         // action and signals
+    }
+    /**
+     * @brief getconfig     get printer config
+     * @return printer config
+     */
+    QMap<QString,QString> getconfig(void){
+        return config;
     }
 private:
+    //layout widget
+
     QLabel * labelDPI = new QLabel(this);
     QSpinBox * spinboxDPI = new QSpinBox(this);
 
@@ -2223,28 +2251,38 @@ private:
     QComboBox * comboboxPageSizeId = new QComboBox(this);
 
     QLabel * labelPageWidth = new QLabel(this);
-    QSpinBox * spinboxPageWidth = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxPageWidth = new QDoubleSpinBox(this);
 
     QLabel * labelPageHeight = new QLabel(this);
-    QSpinBox * spinboxPageHeight = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxPageHeight = new QDoubleSpinBox(this);
 
     QLabel * labelMargeLeft = new QLabel(this);
-    QSpinBox * spinboxMargeLeft = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxMargeLeft = new QDoubleSpinBox(this);
 
     QLabel * labelMargeTop = new QLabel(this);
-    QSpinBox * spinboxMargeTop = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxMargeTop = new QDoubleSpinBox(this);
 
     QLabel * labelMargeRight = new QLabel(this);
-    QSpinBox * spinboxMargeRight = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxMargeRight = new QDoubleSpinBox(this);
 
     QLabel * labelMargeBottom = new QLabel(this);
-    QSpinBox * spinboxMargeBottom = new QSpinBox(this);
+    QDoubleSpinBox * doublespinboxMargeBottom = new QDoubleSpinBox(this);
 
     QPushButton * btnOk = new QPushButton(this);
 
 private:
-    void retranslateUi(QDialog *Dialog){
+    //printer config save
+    QMap<QString,QString> config;
+
+private:
+    /**
+     * @brief retranslateUi   translate UI
+     * @param Dialog          widget
+     */
+    void retranslateUi(QDialog *Dialog)
+    {
         Q_UNUSED(Dialog);
+        setWindowTitle(tr("Printer settings"));
         labelDPI->setText(tr("DPI:"));
         labelRepetitions->setText(tr("Repetitions:"));
         labelFormat->setText(tr("Format:"));
@@ -2263,6 +2301,9 @@ private:
         labelMargeBottom->setText(tr("MargeBottom(MM):"));
         btnOk->setText(tr("Ok"));
     }
+    /**
+     * @brief layoutconfig  widget layout
+     */
     void layoutconfig(){
         auto griadwidget = new QGridLayout(this);
         griadwidget->addWidget(labelDPI,0,0,1,1);labelDPI->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
@@ -2272,38 +2313,143 @@ private:
         griadwidget->addWidget(labelFormat,2,0,1,1);labelFormat->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
         griadwidget->addWidget(comboboxFormat,2,1,1,1);
 
-        QStringList pagesizeidlist;
-        pagesizeidlist << "Custom" << "A0" << "A1" <<"A2" << "A3" << "A4" << "A5" << "A6" << "A7" << "A8";
-        comboboxPageSizeId->addItems(pagesizeidlist);
+        comboboxPageSizeId->addItems(getPaperSizeList());
 
         griadwidget->addWidget(labelPageSizeId,3,0,1,1); labelPageSizeId->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
         griadwidget->addWidget(comboboxPageSizeId,3,1,1,1);
 
         griadwidget->addWidget(labelPageWidth,4,0,1,1);labelPageWidth->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxPageWidth,4,1,1,1);spinboxPageWidth->setRange(1,10000);
+        griadwidget->addWidget(doublespinboxPageWidth,4,1,1,1);doublespinboxPageWidth->setRange(1,10000);
 
         griadwidget->addWidget(labelPageHeight,5,0,1,1);labelPageHeight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxPageHeight,5,1,1,1);spinboxPageHeight->setRange(1,10000);
+        griadwidget->addWidget(doublespinboxPageHeight,5,1,1,1);doublespinboxPageHeight->setRange(1,10000);
 
         griadwidget->addWidget(labelMargeLeft,6,0,1,1);labelMargeLeft->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxMargeLeft,6,1,1,1);spinboxMargeLeft->setRange(0,10000);
+        griadwidget->addWidget(doublespinboxMargeLeft,6,1,1,1);doublespinboxMargeLeft->setRange(0,10000);
 
         griadwidget->addWidget(labelMargeTop,7,0,1,1);labelMargeTop->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxMargeTop,7,1,1,1);spinboxMargeTop->setRange(0,10000);
+        griadwidget->addWidget(doublespinboxMargeTop,7,1,1,1);doublespinboxMargeTop->setRange(0,10000);
 
         griadwidget->addWidget(labelMargeRight,8,0,1,1);labelMargeRight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxMargeRight,8,1,1,1);spinboxMargeRight->setRange(0,10000);
+        griadwidget->addWidget(doublespinboxMargeRight,8,1,1,1);doublespinboxMargeRight->setRange(0,10000);
 
         griadwidget->addWidget(labelMargeBottom,9,0,1,1);labelMargeBottom->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxMargeBottom,9,1,1,1);spinboxMargeBottom->setRange(0,10000);
+        griadwidget->addWidget(doublespinboxMargeBottom,9,1,1,1);doublespinboxMargeBottom->setRange(0,10000);
 
         griadwidget->addWidget(btnOk,10,1,1,1);
 
         griadwidget->setColumnStretch(0, 0);griadwidget->setColumnStretch(1, 1);
 
         setMaximumHeight(300);
+        setMinimumWidth(300);
     }
+
+    /**
+     * @brief datainit  data init
+     */
+    void datainit(){
+        //display
+        spinboxDPI->setValue(config.value("DPI").toInt());
+        spinboxRepetitions->setValue(config.value("Repetitions").toInt());
+        comboboxFormat->setCurrentIndex(config.value("Format").toInt());
+        comboboxPageSizeId->setCurrentText(getPaperName(config.value("PageWidth").toInt(),config.value("PageHeight").toInt()));
+        doublespinboxPageWidth->setValue(config.value("PageWidth").toInt());
+        doublespinboxPageHeight->setValue(config.value("PageHeight").toInt());
+        doublespinboxMargeLeft->setValue(config.value("MargeLeft").toInt());
+        doublespinboxMargeTop->setValue(config.value("MargeTop").toInt());
+        doublespinboxMargeRight->setValue(config.value("MargeRight").toInt());
+        doublespinboxMargeBottom->setValue(config.value("MargeBottom").toInt());
+
+
+        if(comboboxPageSizeId->currentIndex() != 0){
+            doublespinboxPageWidth->setEnabled(false);
+            doublespinboxPageHeight->setEnabled(false);
+        }
+    }
+    /**
+     * @brief signalconfig  signal
+     */
+    void signalconfig(){
+        connect(comboboxPageSizeId,&QComboBox::currentIndexChanged,this,[&](int index){
+            if(index != 0){
+                doublespinboxPageWidth->setEnabled(false);
+                doublespinboxPageHeight->setEnabled(false);
+                QPair<double,double> dimensions = getPaperDimensions(comboboxPageSizeId->currentText());
+                doublespinboxPageWidth->setValue(dimensions.first);
+                doublespinboxPageHeight->setValue(dimensions.second);
+            } else {
+                doublespinboxPageWidth->setEnabled(true);
+                doublespinboxPageHeight->setEnabled(true);
+
+            }
+        });
+
+        connect(btnOk,&QPushButton::clicked,this,[&]{
+            config["DPI"] = QString::number(spinboxDPI->value());
+            config["Repetitions"] = QString::number(spinboxRepetitions->value());
+            config["Format"] = QString::number(comboboxFormat->currentIndex());
+            config["PageSizeId"] = QString::number(comboboxPageSizeId->currentIndex());
+            config["PageWidth"] = QString::number(doublespinboxPageWidth->value());
+            config["PageHeight"] = QString::number(doublespinboxPageHeight->value());
+            config["MargeLeft"] = QString::number(doublespinboxMargeLeft->value());
+            config["MargeTop"] = QString::number(doublespinboxMargeTop->value());
+            config["MargeRight"] = QString::number(doublespinboxMargeRight->value());
+            config["MargeBottom"] = QString::number(doublespinboxMargeBottom->value());
+            accept();
+        });
+    }
+
+    /**
+     * @brief getPaperName  get paper name
+     * @param width         width mm
+     * @param height        height mm
+     * @return QString      paper name
+     */
+    QString getPaperName(double width, double height) {
+        for (const auto& paper : paperSizes) {
+            double standardWidth = paper.second.first;
+            double standardHeight = paper.second.second;
+            if ((width == standardWidth && height == standardHeight) || (width == standardHeight && height == standardWidth)) {
+                return paper.first;
+            }
+        }
+        return "Custom";
+    }
+
+    /**
+     * @brief getPaperDimensions    get paper dimensions
+     * @param paperName             paper name
+     * @return                      paper heigh and width
+     */
+    QPair<double, double> getPaperDimensions(const QString& paperName) {
+        for (const auto& paper : paperSizes) {
+            if (paper.first == paperName) {
+                return paper.second;
+            }
+        }
+        return QPair<double, double>(0, 0);
+    }
+
+    /**
+     * @brief getPaperSizeList      get paper size list
+     * @return                      paper size list
+     */
+    QStringList getPaperSizeList() {
+        QStringList paperSizeList;
+        paperSizeList.append("Custom");
+
+        for (const auto& paper : paperSizes) {
+            paperSizeList.append(paper.first);
+        }
+
+        return paperSizeList;
+    }
+
 protected:
+    /**
+     * @brief changeEvent   translate event
+     * @param e             event
+     */
     void changeEvent(QEvent * e) override {
         switch (e->type()) {
         case QEvent::LanguageChange :
@@ -2316,12 +2462,15 @@ protected:
     }
 };
 
+// printer layout class
 class MyMainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MyMainWindow(const char *dbfile) {
+    MyMainWindow(const char *dbfile , QWidget * parent = nullptr):
+        QMainWindow(parent),
+        BQDFile(dbfile)
+    {
         setWindowModality(Qt::ApplicationModal);
-        BQDFile = QString(dbfile);
         addlog(QString("BQDFile path: %1").arg(BQDFile).toUtf8());
         setWindowTitle(tr("BQDLayout settings") + "    (" + BQDFile + ")");
         filemenuconfig(); //Setting up a menu
@@ -2335,9 +2484,10 @@ public:
         QEventLoop loop;
         connect(this, &MyMainWindow::windowClosed, &loop, &QEventLoop::quit);
         show(); // "Show the main window."
-        loop.exec(); // "Start the event loop, blocking until the window is closed."
+        loop.exec(); // Start the event loop, blocking until the window is closed.
     }
 private:
+    // printer layout widget
     QString BQDFile = QString();
     QMenu *menuFile = nullptr;
 
@@ -2351,6 +2501,12 @@ private:
 
 
 private:
+    QMap<QString,QString> config;   //save printer config
+private:
+    /**
+     * @brief retranslateUi     translate Ui
+     * @param MainWindow        widget
+     */
     void retranslateUi(QMainWindow *MainWindow){
         Q_UNUSED(MainWindow);
         menuFile->setTitle(tr("&File"));
@@ -2360,6 +2516,9 @@ private:
         actionFileSaveAs->setText(tr("&Save as file"));
         actionConfig->setText(tr("&Config"));
     }
+    /**
+     * @brief filemenuconfig        init file menu config
+     */
     void filemenuconfig(){
         menuFile = menuBar()->addMenu("&File");
         actionFileOpen->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_O));
@@ -2392,31 +2551,42 @@ private:
 
     }
 
+    /**
+     * @brief configmenuconfig      init config menu config
+     */
     void configmenuconfig(){
         menuConfig = menuBar()->addMenu("&Config");
         menuConfig->addAction(actionConfig);
         connect(actionConfig, &QAction::triggered, this, [&](){
-            QMap<QString,QString> config;
+
             MyDialog dialog(config,this);
-            dialog.exec();
+            if(dialog.exec() == QDialog::Accepted){
+                config = dialog.getconfig();
+                qDebug() << config;
+            }
         });
     }
 
+    /**
+     * @brief layoutconfig  printer layout
+     */
     void layoutconfig(){
         auto widget = new QWidget;
         auto griadwidget = new QGridLayout(widget);
 
         setCentralWidget(widget);
     }
-private slots:
-    void closeEvent(QCloseEvent *event) override {
-        emit windowClosed();
-        event->accept(); // "Allow the window to close."
-    }
+
 signals:
     void windowClosed();
 
 protected:
+
+    void closeEvent(QCloseEvent *event) override {
+        emit windowClosed();
+        event->accept(); // "Allow the window to close."
+    }
+
     void changeEvent(QEvent * e) override {
         switch (e->type()) {
         case QEvent::LanguageChange :
@@ -2433,10 +2603,10 @@ protected:
  * @param dbfile                Print the configuration file.
  * @return BQDError
  */
-BQDError settingsBQDLayout(const char *dbfile)
+BQDError settingsBQDLayout(const char * dbfile, void * parent)
 {
     appnew();
-    MyMainWindow  BQDLayout(dbfile) ;
+    MyMainWindow  BQDLayout(dbfile,static_cast<QWidget *>(parent)) ;
     BQDLayout.showModal();
     //TDO
     //(void)dbfile;

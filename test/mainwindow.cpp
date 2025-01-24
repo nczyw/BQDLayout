@@ -9,8 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
     hbox->addWidget(btnBQDLayout);
     widget->setLayout(hbox);
     setCentralWidget(widget);
-    connect(btnBQDLayout,&QPushButton::clicked,this,[]{
-        settingsBQDLayout("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd");
+    connect(btnBQDLayout,&QPushButton::clicked,this,[this]{
+        settingsBQDLayout("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd",static_cast<void *>(this));
     });
 }
 

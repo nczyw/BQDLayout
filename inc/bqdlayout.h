@@ -80,7 +80,7 @@ BQDLAYOUT_EXPORT const char * MYAPI getVarlist(const char * dbfile);
  * @param dbfile                Print the configuration file.
  * @return BQDError
  */
-BQDLAYOUT_EXPORT BQDError MYAPI settingsBQDLayout(const char * dbfile);
+BQDLAYOUT_EXPORT BQDError MYAPI settingsBQDLayout(const char * dbfile, void *parent = nullptr);
 #ifdef __cplusplus
 }
 #endif

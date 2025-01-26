@@ -63,10 +63,8 @@ BQDLAYOUT_EXPORT BQDError MYAPI createBQDLayoutFile(void);
  *                      var1=tmp1,var2=temp2,var3=temp3
  * @return  BQDError
  */
-BQDLAYOUT_EXPORT BQDError MYAPI printfBQDCode(  const char * dbfile ,       //Printer configuration file.
-                                                const char * printername ,  //Print the file name or printer name.
-                                                int opf,                    //Printer type:0: Standard printer,1: Generate PDF
-                                                const char * var );         //Var: var1=tmp1,var2=temp2,var3=temp3
+BQDLAYOUT_EXPORT BQDError MYAPI printfBQDCode(const char * dbfile , const char *printername, int opf,       //Printer configuration file.
+                                              const char * var );         //Var: var1=tmp1,var2=temp2,var3=temp3
 
 /**
  * @brief getVarlist    Retrieve the list of variables.

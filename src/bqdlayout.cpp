@@ -38,9 +38,19 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QPrinterInfo>
 #include <QMap>
 #include <QDoubleSpinBox>
 #include <QComboBox>
+#include <QMessageBox>
+#include <QTableView>
+#include <QStandardItemModel>
+#include <QToolBar>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsProxyWidget>
+#include <QPainter>
+
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -230,7 +240,7 @@ static QByteArray &getPrintVal(){
 }
 
 static bool ptest = false ;                 //Test print.
-static bool getconfig(const char *dbfile, QPageSize &pagesize ,  QMarginsF &marginsf, int &dpi, int &printRepetitions);  //Read printing parameters.
+static bool getconfig(const char *dbfile, int &dpi, QPageSize &pagesize ,  QMarginsF &marginsf);  //Read printing parameters.
 //dpi
 typeDPI dpi = {0};
 //Barcode list
@@ -246,7 +256,7 @@ static bool updatesizeBarCode(typeBarCode barcode ,struct Barcode_Item * bc);   
 static bool renderBarCode(typeBarCode barcode , QPainter &painter ,struct Barcode_Item * bc);   //Draw the entire barcode.
 static bool drawBarBarCode(typeBarCode barcode ,QPainter &painter , struct Barcode_Item * bc);  //Draw the barcode section of the barcode.
 static bool drawtextBarCode(typeBarCode barcode , QPainter &painter);                           //Draw the character section of the barcode.
-static bool createBarCode(QPainter &painter ,const QMap<QString,QString> var , int CurRepCount);                  //Create a barcode.
+static bool createBarCode(QPainter &painter , const QMap<QString,QString> var );                  //Create a barcode.
 static bool readBarcode(QString dbfile, int page);                                              //Read the barcode from a specified page.
 
 //DataMatrix list
@@ -256,7 +266,7 @@ static QVector<typeDataMatrix> & getdatamatrix(){
 }
 static int widthDataMatrix = 0;                         //DataMatrix width.
 static int heightDataMatrix = 0;                        //DataMatrix height.
-static bool createDataMatrix(QPainter &painter, const QMap<QString, QString> var, int CurRepCount);  //Create a DataMatrix code.
+static bool createDataMatrix(QPainter &painter, const QMap<QString, QString> var);  //Create a DataMatrix code.
 static bool readDataMatrix(QString dbfile, int page);                               //Read DataMatrix from a specified page.
 
 //QR Code list
@@ -264,7 +274,7 @@ static QVector<typeQRCode> & getqrcode(){
     static QVector<typeQRCode> qrcode;
     return qrcode;
 }
-static bool createQRCode(QPainter &painter , const QMap<QString, QString> var, int CurRepCount);     //Create a QR code.
+static bool createQRCode(QPainter &painter , const QMap<QString, QString> var);     //Create a QR code.
 static bool readQRCode(QString dbfile, int page);                                   //Read QR code from a specified page.
 
 
@@ -273,7 +283,7 @@ static QVector<typeStringText> & getstringtext(){
     static QVector<typeStringText> stringtext;
     return stringtext;
 }
-static bool createStringText(QPainter &painter , const QMap<QString,QString> var, int CurRepCount);  //Create a character.
+static bool createStringText(QPainter &painter , const QMap<QString,QString> var);  //Create a character.
 static bool readStringText(QString dbfile, int page);                               //Read character from a specified page.
 
 //Rectangle list
@@ -313,7 +323,7 @@ static QVector<typePicture> & getPicture(){
     static QVector<typePicture> picture;
     return picture;
 }
-static bool createPicture(QPainter &painter , const QMap<QString,QString> var, int CurRepCount);     //Create a picture
+static bool createPicture(QPainter &painter , const QMap<QString,QString> var);     //Create a picture
 static bool readPictrue(QString dbfile, int page);                                  //Read picture from a specified page.
 
 static void addlog(QByteArray log , const bool &err = false );  //Add a log.
@@ -323,13 +333,12 @@ static void addlog(QByteArray log , const bool &err = false );  //Add a log.
 /**
  * @brief getconfig         Read printing parameters.
  * @param dbfile            Printer configuration file.
+ * @param dpi               Printer dpi.
  * @param pagesize          Page size.
  * @param marginsf          Margins.
- * @param dpi               Printer dpi.
- * @param printRepetitions  Print repetitions.
  * @return bool             Whether successful.
  */
-static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &marginsf , int &dpi , int &printRepetitions){
+static bool getconfig(const char * dbfile , int &dpi , QPageSize &pagesize ,  QMarginsF &marginsf ){
     bool ok = false;
     QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
     QSqlDatabase db;
@@ -347,7 +356,7 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
     //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select pagewidth,pageheight,margleft,margtop,margright,margbottom,dpi,printRepetitions "
+    QString cmd = QString("select dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
                           "from config where id=1 "
                           );
     if(!query.exec(cmd)){
@@ -355,10 +364,9 @@ static bool getconfig(const char * dbfile ,QPageSize &pagesize ,  QMarginsF &mar
         ok = false ;
     }else{
         query.first();
-        pagesize = QPageSize(QSizeF(query.value(0).toDouble(),query.value(1).toDouble()),QPageSize::Millimeter);
-        marginsf = QMarginsF(query.value(2).toDouble(),query.value(3).toDouble(),query.value(4).toDouble(),query.value(5).toDouble());
-        dpi = query.value(6).toInt();
-        printRepetitions = query.value(7).toInt();
+        dpi = query.value(0).toInt();
+        pagesize = QPageSize(QSizeF(query.value(1).toDouble(),query.value(2).toDouble()),QPageSize::Millimeter);
+        marginsf = QMarginsF(query.value(3).toDouble(),query.value(4).toDouble(),query.value(5).toDouble(),query.value(6).toDouble());
         ok =true ;
     }
     if(db.isOpen()) db.close();
@@ -608,7 +616,7 @@ static bool drawtextBarCode(typeBarCode barcode , QPainter &painter){
  * @param var               Variable.
  * @return bool             Was it successful.
  */
-static bool createBarCode(QPainter &painter, const QMap<QString, QString> var , int CurRepCount){
+static bool createBarCode(QPainter &painter, const QMap<QString, QString> var){
     for (auto & _barcode:getbarcode()) {
         if(!ptest){
             if(_barcode.var){
@@ -741,7 +749,7 @@ static bool readBarcode(QString dbfile, int page){
  * @param var                   Variable.
  * @return bool                 Was it successful.
  */
-static bool createDataMatrix(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
+static bool createDataMatrix(QPainter &painter , const QMap<QString,QString> var){
     for (auto & _datamatrix: getdatamatrix()) {
         if(!ptest){
             if(_datamatrix.var){
@@ -886,7 +894,7 @@ static bool readDataMatrix(QString dbfile, int page){
  * @param var               Variable.
  * @return bool             Was it successful.
  */
-static bool createQRCode(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
+static bool createQRCode(QPainter &painter , const QMap<QString,QString> var){
     for (auto & _qrcode: getqrcode()) {
         if(!ptest){
             if(_qrcode.var){
@@ -1013,7 +1021,7 @@ static bool readQRCode(QString dbfile, int page){
  * @param var                   Variable.
  * @return bool                 Was it successful.
  */
-static bool createStringText(QPainter &painter , const QMap<QString,QString> var , int CurRepCount){
+static bool createStringText(QPainter &painter , const QMap<QString,QString> var){
     for (auto & _stringtext: getstringtext()) {
         if(!ptest){
             if(_stringtext.var){
@@ -1500,7 +1508,7 @@ static bool readEllipse(QString dbfile, int page){
  * @param var               Variable.
  * @return                  Was it successful.
  */
-static bool createPicture(QPainter &painter, const QMap<QString, QString> var , int CurRepCount){
+static bool createPicture(QPainter &painter, const QMap<QString, QString> var){
     for (auto & _picture: getPicture()) {
         if(!ptest){
             if(_picture.var){
@@ -1659,14 +1667,12 @@ BQDError createBQDLayoutFile(){
         create table if not exists [config] (
             id integer primary key check(id = 1) ,
             dpi integer not null ,
-            printRepetitions integer not null ,
-            outputformat integer not null ,
             pagewidth double not null ,
             pageheight double not null,
-            margleft double not null ,
-            margtop double not null ,
-            margright double not null ,
-            margbottom double not null
+            margeleft double not null ,
+            margetop double not null ,
+            margeright double not null ,
+            margebottom double not null
         );
     )";
     if(!query.exec(cmd)){
@@ -1675,7 +1681,7 @@ BQDError createBQDLayoutFile(){
         return BQDCBCErr ;
     }else{
         addlog(QString("Configuration file created successfully.").toUtf8());
-        cmd = "insert into [config](id,dpi,printRepetitions,outputformat,pagewidth,pageheight,margleft,margtop,margright,margbottom) values (1,1200,1,1,210,270,1,1,1,1)";
+        cmd = "insert into [config](id,dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom) values (1,1200,210,297,1,1,1,1)";
         if(!query.exec(cmd)){
             addlog(QString("The record already exists and does not need to be added again.").toUtf8());
         }else{
@@ -1946,20 +1952,19 @@ BQDError createBQDLayoutFile(){
  * @param dbfile        Printer configuration file.
  * @param printername   Print the file name or printer name.
  * @param opf           Printer type
- *                      0: Standard printer
- *                      1: Generate PDF
+ *                          0: Standard printer
+ *                          1: Generate PDF
  * @param var           Var
  *                      var1=tmp1,var2=temp2,var3=temp3
  * @return  BQDError
  */
-BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, const char * var ){
+BQDError printfBQDCode(const char * dbfile , const char * printername , int opf , const char * var ){
     appnew();
     //Read the configuration file.
+    int getDpi;                    //dpi.
     QPageSize pagesize;         //PageSize.
     QMarginsF margins;          //Margin.
-    int getDpi;                    //dpi.
-    int printRepetitions;                //Print repetitions
-    if(!getconfig(dbfile,pagesize,margins,getDpi,printRepetitions)){
+    if(!getconfig(dbfile,getDpi,pagesize,margins)){
         return BQDConfigErr;
     }
     if(getDpi <= 0) getDpi = 1200 ;     //Set very hight dpi.
@@ -2025,84 +2030,81 @@ BQDError printfBQDCode(const char * dbfile , const char *printername,int opf, co
         addlog(QString("Debugging the print operation, no variables will be modified.").toUtf8());
         mapvar.clear();
     }
-    for(int i = 0 ; i < printRepetitions ; ++i){
-        if(i > 0) printer.newPage();
-        int page = 1 ;          //Start page numbering; page 0 is the background and does not need to be printed.
-        while(page){
-            bool recterr = false , lineerr = false , texterr = false , barcodeerr = false , roundedrecterr = false , datamatrixerr = false , pictureerr = false;
-            bool qrcodeerr = false , ellipseerr = false;
-            if(readRectangle(dbfile,page)){
-                recterr = false;
-            }else{
-                recterr = true;
-            }
-
-            if(readLine(dbfile,page)){
-                lineerr = false;
-            }else{
-                lineerr = true;
-            }
-
-            if(readStringText(dbfile,page)){
-                texterr = false;
-            }else{
-                texterr = true;
-            }
-
-            if(readBarcode(dbfile,page)){
-                barcodeerr = false;
-            }else{
-                barcodeerr = true;
-            }
-
-            if(readRoundedRect(dbfile,page)){
-                roundedrecterr = false ;
-            }else{
-                roundedrecterr = true;
-            }
-
-            if(readDataMatrix(dbfile,page)){
-                datamatrixerr = false ;
-            }else{
-                datamatrixerr = true;
-            }
-
-            if(readQRCode(dbfile,page)){
-                qrcodeerr = false;
-            }else{
-                qrcodeerr = true;
-            }
-
-            if(readEllipse(dbfile,page)){
-                ellipseerr = false;
-            }else{
-                ellipseerr = true;
-            }
-
-            if(readPictrue(dbfile,page)){
-                pictureerr = false;
-            }else{
-                pictureerr = true;
-            }
-
-            if(recterr && lineerr && texterr && barcodeerr && roundedrecterr && datamatrixerr && qrcodeerr && ellipseerr && pictureerr){
-                break;
-            }else{
-                if(page > 1){
-                    printer.newPage();
-                }
-                createRectangle(painter);
-                createRoundedRect(painter);
-                createEllipse(painter);
-                createLine(painter);
-                createPicture(painter,mapvar,i);
-                createStringText(painter,mapvar,i);
-                createBarCode(painter,mapvar,i);
-                createDataMatrix(painter,mapvar,i);
-                createQRCode(painter,mapvar,i);
-            }
-            ++page;
+    int page = 1 ;          //Start page numbering; page 0 is the background and does not need to be printed.
+    while(page){
+        bool recterr = false , lineerr = false , texterr = false , barcodeerr = false , roundedrecterr = false , datamatrixerr = false , pictureerr = false;
+        bool qrcodeerr = false , ellipseerr = false;
+        if(readRectangle(dbfile,page)){
+            recterr = false;
+        }else{
+            recterr = true;
         }
+
+        if(readLine(dbfile,page)){
+            lineerr = false;
+        }else{
+            lineerr = true;
+        }
+
+        if(readStringText(dbfile,page)){
+            texterr = false;
+        }else{
+            texterr = true;
+        }
+
+        if(readBarcode(dbfile,page)){
+            barcodeerr = false;
+        }else{
+            barcodeerr = true;
+        }
+
+        if(readRoundedRect(dbfile,page)){
+            roundedrecterr = false ;
+        }else{
+            roundedrecterr = true;
+        }
+
+        if(readDataMatrix(dbfile,page)){
+            datamatrixerr = false ;
+        }else{
+            datamatrixerr = true;
+        }
+
+        if(readQRCode(dbfile,page)){
+            qrcodeerr = false;
+        }else{
+            qrcodeerr = true;
+        }
+
+        if(readEllipse(dbfile,page)){
+            ellipseerr = false;
+        }else{
+            ellipseerr = true;
+        }
+
+        if(readPictrue(dbfile,page)){
+            pictureerr = false;
+        }else{
+            pictureerr = true;
+        }
+
+        if(recterr && lineerr && texterr && barcodeerr && roundedrecterr && datamatrixerr && qrcodeerr && ellipseerr && pictureerr){
+            break;
+        }else{
+            if(page > 1){
+                printer.newPage();
+            }
+            createRectangle(painter);
+            createRoundedRect(painter);
+            createEllipse(painter);
+            createLine(painter);
+            createPicture(painter,mapvar);
+            createStringText(painter,mapvar);
+            createBarCode(painter,mapvar);
+            createDataMatrix(painter,mapvar);
+            createQRCode(painter,mapvar);
+        }
+        ++page;
     }
     painter.end();
     appdel();
@@ -2202,6 +2204,207 @@ const char *getVarlist(const char * dbfile)
     return getPrintVal().constData();
 }
 
+//class text
+class Text : public QWidget {
+    Q_OBJECT
+public:
+    typedef struct typeText{
+        QString     uuid        = QString();
+        int         page        = 0;
+        int         layer       = 0;
+        QString     str         = QString();
+        bool        var         = false;
+        QString     varName     = QString();
+        double      posX        = 0;
+        double      posY        = 0;
+        QColor      bColor      = QColor();
+        QColor      fColor      = QColor();
+        QFont       font        = QFont();
+        double      angle       = 0 ;
+    }typeText;
+public:
+    explicit Text(typeText _text , QWidget * parent = nullptr):
+    QWidget(parent),
+    text(_text)
+    {
+        move(text.posX,text.posY);
+        show();
+    }
+private:
+    typeText text;
+
+private:
+    typedef struct typeQuadrant {
+        QPoint point;       //原点坐标位置需要移动的地方
+        QSize  size;        //最小外接矩形
+    }typeQuadrant;
+    enum Quadrant{
+        FirstQuadrant = 1 ,
+        SecondQuadrant,
+        ThirdQuadrant,
+        FourthQuadrant,
+        OX0 = 0,
+        OX90 = 90,
+        OX180 = 180 ,
+        OX270 = 270 ,
+        OX360 = 360
+    };
+    typeQuadrant calcCoordinate(qreal _angle ,int fontsize , int _width , int _height){
+        typeQuadrant quadrant;
+        Quadrant _quadrant;         //象限记录
+        if(_angle > 0 && _angle < 90) {
+            _quadrant = FirstQuadrant;
+        }
+        else if((_angle > 90) && (_angle < 180)){
+            _quadrant = SecondQuadrant;
+        }
+        else if((_angle > 180) && (_angle < 270)){
+            _quadrant = ThirdQuadrant;
+        }
+        else if((_angle > 270) && (_angle < 360)){
+            _quadrant = FourthQuadrant;
+        }
+        else if(_angle == 0){
+            _quadrant = OX0;
+        }
+        else if(_angle == 90){
+            _quadrant = OX90;
+        }
+        else if(_angle == 180){
+            _quadrant = OX180;
+        }
+        else if(_angle == 270){
+            _quadrant = OX270;
+        }
+        else {
+            _quadrant = OX360;
+        }
+        switch (_quadrant) {
+        case FirstQuadrant: {        //第一象限计算公式
+            int iy = _width * qCos((90 - _angle) / 180 * M_PI);
+            int ix = _width * qSin((90 - _angle) / 180 * M_PI);
+
+            int iiy = _height * qCos(_angle / 180 * M_PI);    //字符偏移后的左边高度
+            int iix = _height * qSin(_angle / 180 * M_PI);    //字符便宜后右边偏移量
+
+        //    quadrant.point = QPoint(2,iiy);     //调整起始坐标
+        //    quadrant.size = QSize(ix + iix + 4, iy + iiy + 4);
+
+            quadrant.point = QPoint(0,iiy);     //调整起始坐标
+            quadrant.size = QSize(ix + iix + 0, iy + iiy + 0);
+
+            break;
+        }
+        case SecondQuadrant:{       //第二象限计算公式
+            int iix = _width * qCos((90 - (_angle - 90)) / 180 * M_PI); //邻边
+            int iiy = _width * qSin((90 - (_angle - 90)) / 180 * M_PI); //对边
+
+            int ix = _height * qCos((_angle - 90) / 180 * M_PI);
+            int iy = _height * qSin((_angle - 90) / 180 * M_PI);
+
+            quadrant.point = QPoint(iix + 2 ,2);     //调整起始坐标
+            quadrant.size = QSize(ix + iix + 4 , iy + iiy + 4);
+            break;
+        }
+        case ThirdQuadrant:{        //第三象限
+
+            int ix = _width * qSin((90 - (_angle - 180)) / 180 * M_PI);
+            int iy = _width * qCos((90 - (_angle - 180)) / 180 * M_PI);
+
+            int iix = _height * qCos((90 - (_angle - 180)) / 180 * M_PI);
+            int iiy = _height * qSin((90 - (_angle - 180)) / 180 * M_PI);
+
+            quadrant.point = QPoint(ix + iix + 2 ,iy + 2);     //调整起始坐标
+            quadrant.size = QSize(ix + iix + 4, iy + iiy + 4 );
+            break;
+        }
+        case FourthQuadrant:{       //第四象限
+            int ix = _width * qCos((360 - _angle) / 180 * M_PI);    //邻边
+            int iy = _width * qSin((360 - _angle) / 180 * M_PI);    //对边
+
+            int iix = _height * qCos((90 - (360 - _angle)) / 180 * M_PI);
+            int iiy = _height * qSin((90 - (360 - _angle)) / 180 * M_PI);
+
+            quadrant.point = QPoint(iix,iy + iiy);     //调整起始坐标
+            quadrant.size = QSize(ix + iix + 4 ,iy + iiy + 4);
+            break;
+        }
+        case OX0:{
+        //    quadrant.point = QPoint(2,_height - 2);     //调整起始坐标
+        //    quadrant.size = QSize(_width + (fontsize / 5) ,_height + (fontsize / 5));
+            quadrant.point = QPoint(0,_height);     //调整起始坐标
+            quadrant.size = QSize(_width ,_height + (fontsize / 5));
+            break;
+        }
+        case OX90:{
+            quadrant.point = QPoint(fontsize / 5,2);     //调整起始坐标
+            quadrant.size = QSize(_height + fontsize / 5 ,_width + 4);
+            break;
+        }
+        case OX180:{
+            quadrant.point = QPoint(_width , fontsize / 5);     //调整起始坐标
+            quadrant.size = QSize(_width + 4 , _height + fontsize / 5 );
+            break;
+        }
+        case OX270:{
+            quadrant.point = QPoint(_height + fontsize / 5 ,_width );     //调整起始坐标
+            quadrant.size = QSize(_height + fontsize / 5 ,_width + 4 );
+            break;
+        }
+        case OX360:{
+            quadrant.point = QPoint(2,_height - 2);     //调整起始坐标
+            quadrant.size = QSize(_width + (fontsize / 5) ,_height + (fontsize / 5));
+            break;
+        }
+        default:
+            quadrant.point = QPoint(0,0);     //调整起始坐标
+            quadrant.size = QSize(0,0);
+            break;
+        }
+        return quadrant ;
+    }
+
+protected:
+    void paintEvent(QPaintEvent * event) override{
+        QPainter painter;
+/*
+        QFontMetrics metrics(text.font);    //获取符宽度，用于设置坐标
+        int mW = metrics.horizontalAdvance(text.str);      //获取字符高度
+        int mH = metrics.height();                  //获取高度
+    //    qDebug() << "字符宽度:" << mW << ",字符高度:" << mH;
+*/
+        painter.begin(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setFont(text.font);
+/*
+        typeQuadrant quadrant = calcCoordinate(text.angle,text.font.pointSize(),mW,mH);
+        painter.translate(quadrant.point);
+        painter.rotate(text.angle);
+
+        painter.setBrush(text.bColor); //设置背景色
+        painter.setPen(Qt::NoPen);
+        painter.drawRect(0, 0, mW ,mH );   //画背景色
+
+        painter.setBrush(Qt::NoBrush);        //设置前景色
+        painter.setPen(text.fColor);
+
+        painter.drawText(0,0,text.str);
+        painter.end();
+        resize(quadrant.size);
+*/
+        QFontMetrics metrics(text.font);
+        int textHeight = metrics.height();
+        int baseline = metrics.ascent();
+
+        // 在适当的位置绘制文本
+        painter.translate(0,baseline);
+        painter.drawText(0, 0, text.str);
+
+        // 调整QWidget的大小来适应文本
+        resize(metrics.horizontalAdvance(text.str), textHeight);
+    }
+};
+
 //Printer settings class
 class MyDialog :public QDialog{
     Q_OBJECT
@@ -2219,7 +2422,7 @@ private:
         {"A8", {52, 74}}
     };
 public:
-    MyDialog(QMap<QString,QString> _config,QWidget *parent = nullptr):
+    explicit MyDialog(QMap<QString,QString> _config,QWidget *parent = nullptr):
         QDialog(parent),
         config(_config)
     {
@@ -2240,12 +2443,6 @@ private:
 
     QLabel * labelDPI = new QLabel(this);
     QSpinBox * spinboxDPI = new QSpinBox(this);
-
-    QLabel * labelRepetitions = new QLabel(this);
-    QSpinBox * spinboxRepetitions = new QSpinBox(this);
-
-    QLabel * labelFormat = new QLabel(this);
-    QComboBox * comboboxFormat = new QComboBox(this);
 
     QLabel * labelPageSizeId = new QLabel(this);
     QComboBox * comboboxPageSizeId = new QComboBox(this);
@@ -2279,19 +2476,10 @@ private:
      * @brief retranslateUi   translate UI
      * @param Dialog          widget
      */
-    void retranslateUi(QDialog *Dialog)
-    {
+    void retranslateUi(QDialog *Dialog){
         Q_UNUSED(Dialog);
         setWindowTitle(tr("Printer settings"));
         labelDPI->setText(tr("DPI:"));
-        labelRepetitions->setText(tr("Repetitions:"));
-        labelFormat->setText(tr("Format:"));
-        int formatindex = comboboxFormat->currentIndex();
-        formatindex = formatindex < 0 ? 0 : formatindex;
-        comboboxFormat->clear();
-        comboboxFormat->addItem(tr("Printer"));
-        comboboxFormat->addItem(tr("PDF"));
-        comboboxFormat->setCurrentIndex(formatindex);
         labelPageSizeId->setText(tr("PageSizeId:"));
         labelPageWidth->setText(tr("PageWidth(MM):"));
         labelPageHeight->setText(tr("PageHeight(MM):"));
@@ -2301,47 +2489,44 @@ private:
         labelMargeBottom->setText(tr("MargeBottom(MM):"));
         btnOk->setText(tr("Ok"));
     }
+
     /**
      * @brief layoutconfig  widget layout
      */
     void layoutconfig(){
         auto griadwidget = new QGridLayout(this);
+
         griadwidget->addWidget(labelDPI,0,0,1,1);labelDPI->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
         griadwidget->addWidget(spinboxDPI,0,1,1,1);spinboxDPI->setRange(0,1200);
-        griadwidget->addWidget(labelRepetitions,1,0,1,1);labelRepetitions->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(spinboxRepetitions,1,1,1,1); spinboxRepetitions->setRange(1,99);
-        griadwidget->addWidget(labelFormat,2,0,1,1);labelFormat->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(comboboxFormat,2,1,1,1);
 
+        griadwidget->addWidget(labelPageSizeId,1,0,1,1); labelPageSizeId->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
         comboboxPageSizeId->addItems(getPaperSizeList());
+        griadwidget->addWidget(comboboxPageSizeId,1,1,1,1);
 
-        griadwidget->addWidget(labelPageSizeId,3,0,1,1); labelPageSizeId->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(comboboxPageSizeId,3,1,1,1);
+        griadwidget->addWidget(labelPageWidth,2,0,1,1);labelPageWidth->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxPageWidth,2,1,1,1);doublespinboxPageWidth->setRange(1,10000);
 
-        griadwidget->addWidget(labelPageWidth,4,0,1,1);labelPageWidth->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxPageWidth,4,1,1,1);doublespinboxPageWidth->setRange(1,10000);
+        griadwidget->addWidget(labelPageHeight,3,0,1,1);labelPageHeight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxPageHeight,3,1,1,1);doublespinboxPageHeight->setRange(1,10000);
 
-        griadwidget->addWidget(labelPageHeight,5,0,1,1);labelPageHeight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxPageHeight,5,1,1,1);doublespinboxPageHeight->setRange(1,10000);
+        griadwidget->addWidget(labelMargeLeft,4,0,1,1);labelMargeLeft->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxMargeLeft,4,1,1,1);doublespinboxMargeLeft->setRange(0,10000);
 
-        griadwidget->addWidget(labelMargeLeft,6,0,1,1);labelMargeLeft->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxMargeLeft,6,1,1,1);doublespinboxMargeLeft->setRange(0,10000);
+        griadwidget->addWidget(labelMargeTop,5,0,1,1);labelMargeTop->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxMargeTop,5,1,1,1);doublespinboxMargeTop->setRange(0,10000);
 
-        griadwidget->addWidget(labelMargeTop,7,0,1,1);labelMargeTop->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxMargeTop,7,1,1,1);doublespinboxMargeTop->setRange(0,10000);
+        griadwidget->addWidget(labelMargeRight,6,0,1,1);labelMargeRight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxMargeRight,6,1,1,1);doublespinboxMargeRight->setRange(0,10000);
 
-        griadwidget->addWidget(labelMargeRight,8,0,1,1);labelMargeRight->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxMargeRight,8,1,1,1);doublespinboxMargeRight->setRange(0,10000);
+        griadwidget->addWidget(labelMargeBottom,7,0,1,1);labelMargeBottom->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        griadwidget->addWidget(doublespinboxMargeBottom,7,1,1,1);doublespinboxMargeBottom->setRange(0,10000);
 
-        griadwidget->addWidget(labelMargeBottom,9,0,1,1);labelMargeBottom->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
-        griadwidget->addWidget(doublespinboxMargeBottom,9,1,1,1);doublespinboxMargeBottom->setRange(0,10000);
-
-        griadwidget->addWidget(btnOk,10,1,1,1);
+        griadwidget->addWidget(btnOk,8,1,1,1);
 
         griadwidget->setColumnStretch(0, 0);griadwidget->setColumnStretch(1, 1);
 
         setMaximumHeight(300);
-        setMinimumWidth(300);
+        setMinimumWidth(350);
     }
 
     /**
@@ -2349,18 +2534,14 @@ private:
      */
     void datainit(){
         //display
-        spinboxDPI->setValue(config.value("DPI").toInt());
-        spinboxRepetitions->setValue(config.value("Repetitions").toInt());
-        comboboxFormat->setCurrentIndex(config.value("Format").toInt());
-        comboboxPageSizeId->setCurrentText(getPaperName(config.value("PageWidth").toInt(),config.value("PageHeight").toInt()));
-        doublespinboxPageWidth->setValue(config.value("PageWidth").toInt());
-        doublespinboxPageHeight->setValue(config.value("PageHeight").toInt());
-        doublespinboxMargeLeft->setValue(config.value("MargeLeft").toInt());
-        doublespinboxMargeTop->setValue(config.value("MargeTop").toInt());
-        doublespinboxMargeRight->setValue(config.value("MargeRight").toInt());
-        doublespinboxMargeBottom->setValue(config.value("MargeBottom").toInt());
-
-
+        spinboxDPI->setValue(config.value("dpi").toInt());
+        comboboxPageSizeId->setCurrentText(getPaperName(config.value("pagewidth").toInt(),config.value("pageheight").toInt()));
+        doublespinboxPageWidth->setValue(config.value("pagewidth").toInt());
+        doublespinboxPageHeight->setValue(config.value("pageheight").toInt());
+        doublespinboxMargeLeft->setValue(config.value("margeleft").toInt());
+        doublespinboxMargeTop->setValue(config.value("margetop").toInt());
+        doublespinboxMargeRight->setValue(config.value("margeright").toInt());
+        doublespinboxMargeBottom->setValue(config.value("margebottom").toInt());
         if(comboboxPageSizeId->currentIndex() != 0){
             doublespinboxPageWidth->setEnabled(false);
             doublespinboxPageHeight->setEnabled(false);
@@ -2385,16 +2566,14 @@ private:
         });
 
         connect(btnOk,&QPushButton::clicked,this,[&]{
-            config["DPI"] = QString::number(spinboxDPI->value());
-            config["Repetitions"] = QString::number(spinboxRepetitions->value());
-            config["Format"] = QString::number(comboboxFormat->currentIndex());
+            config["dpi"] = QString::number(spinboxDPI->value());
             config["PageSizeId"] = QString::number(comboboxPageSizeId->currentIndex());
-            config["PageWidth"] = QString::number(doublespinboxPageWidth->value());
-            config["PageHeight"] = QString::number(doublespinboxPageHeight->value());
-            config["MargeLeft"] = QString::number(doublespinboxMargeLeft->value());
-            config["MargeTop"] = QString::number(doublespinboxMargeTop->value());
-            config["MargeRight"] = QString::number(doublespinboxMargeRight->value());
-            config["MargeBottom"] = QString::number(doublespinboxMargeBottom->value());
+            config["pagewidth"] = QString::number(doublespinboxPageWidth->value());
+            config["pageheight"] = QString::number(doublespinboxPageHeight->value());
+            config["margeleft"] = QString::number(doublespinboxMargeLeft->value());
+            config["margetop"] = QString::number(doublespinboxMargeTop->value());
+            config["margeright"] = QString::number(doublespinboxMargeRight->value());
+            config["margebottom"] = QString::number(doublespinboxMargeBottom->value());
             accept();
         });
     }
@@ -2406,11 +2585,11 @@ private:
      * @return QString      paper name
      */
     QString getPaperName(double width, double height) {
-        for (const auto& paper : paperSizes) {
-            double standardWidth = paper.second.first;
-            double standardHeight = paper.second.second;
+        for (auto it = paperSizes.cbegin(); it != paperSizes.cend(); ++it){
+            double standardWidth = it->second.first;
+            double standardHeight = it->second.second;
             if ((width == standardWidth && height == standardHeight) || (width == standardHeight && height == standardWidth)) {
-                return paper.first;
+                return it->first;
             }
         }
         return "Custom";
@@ -2422,9 +2601,9 @@ private:
      * @return                      paper heigh and width
      */
     QPair<double, double> getPaperDimensions(const QString& paperName) {
-        for (const auto& paper : paperSizes) {
-            if (paper.first == paperName) {
-                return paper.second;
+        for (auto it = paperSizes.cbegin(); it != paperSizes.cend(); ++it) {
+            if (it->first == paperName) {
+                return it->second;
             }
         }
         return QPair<double, double>(0, 0);
@@ -2437,11 +2616,9 @@ private:
     QStringList getPaperSizeList() {
         QStringList paperSizeList;
         paperSizeList.append("Custom");
-
-        for (const auto& paper : paperSizes) {
-            paperSizeList.append(paper.first);
+        for(auto it = paperSizes.cbegin(); it != paperSizes.cend(); ++it){
+            paperSizeList.append(it->first);
         }
-
         return paperSizeList;
     }
 
@@ -2466,16 +2643,18 @@ protected:
 class MyMainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MyMainWindow(const char *dbfile , QWidget * parent = nullptr):
+    explicit MyMainWindow(const char *dbfile , QWidget * parent = nullptr):
         QMainWindow(parent),
         BQDFile(dbfile)
     {
         setWindowModality(Qt::ApplicationModal);
         addlog(QString("BQDFile path: %1").arg(BQDFile).toUtf8());
-        setWindowTitle(tr("BQDLayout settings") + "    (" + BQDFile + ")");
+        wintitle = tr("BQDLayout settings") + "    (" + BQDFile + ")";
+        setWindowTitle(wintitle);
         filemenuconfig(); //Setting up a menu
         configmenuconfig();
         layoutconfig();
+        datainit();
         retranslateUi(this);
     }
     // Fake a blocking window event.
@@ -2486,11 +2665,12 @@ public:
         show(); // "Show the main window."
         loop.exec(); // Start the event loop, blocking until the window is closed.
     }
+
 private:
     // printer layout widget
-    QString BQDFile = QString();
-    QMenu *menuFile = nullptr;
-
+    QWidget * widget = new QWidget;
+    QGraphicsView  *view = new QGraphicsView(this);
+    QMenu * menuFile = nullptr;
     QAction * actionFileOpen    = new QAction(menuFile);
     QAction * actionFileSave    = new QAction(menuFile);
     QAction * actionFileSaveAs  = new QAction(menuFile);
@@ -2499,10 +2679,77 @@ private:
     QMenu *menuConfig = nullptr;
     QAction *actionConfig       = new QAction(menuConfig);
 
-
+    QToolBar *toolbar = addToolBar("Main Toolbar");
+    QAction  *actionText = new QAction(toolbar);
 private:
+    bool needsave = false ;
+    QString wintitle = QString();
+    QString BQDFile = QString();
     QMap<QString,QString> config;   //save printer config
+    QSqlDatabase db;
 private:
+    void datainit(){
+        QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
+        QSqlDatabase db;
+        if(QSqlDatabase::contains(dbname)){
+            db = QSqlDatabase::database(dbname);
+        }else{
+            db = QSqlDatabase::addDatabase("QSQLITE",dbname);
+        }
+        //addlog(QString("BQDLayout name is %1").arg(dbname).toUtf8(),true);
+        db.setDatabaseName(BQDFile);
+        if(!db.open()){
+            addlog(QString("The BQDLayout file failed to open due to the following reason:%1,file:%2").arg(db.lastError().text(),QString(BQDFile)).toUtf8(),true);
+            return ;
+        }
+        //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
+
+        QSqlQuery query(db);
+        QString cmd = QString("select dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
+                              "from config where id=1 "
+                              );
+        if(!query.exec(cmd)){
+            addlog(QString("Configuration query failed due to the following reason:%1").arg(query.lastError().text()).toUtf8(),true);
+            return ;
+        }else{
+            query.first();
+            config.insert("dpi",query.value(0).toString());
+            config.insert("pagewidth",query.value(1).toString());
+            config.insert("pageheight",query.value(2).toString());
+            config.insert("margeleft",query.value(3).toString());
+            config.insert("margetop",query.value(4).toString());
+            config.insert("margeright",query.value(5).toString());
+            config.insert("margebottom",query.value(6).toString());
+
+        }
+    //    qDebug() << config;
+        if(db.isOpen()) db.close();
+
+        QSizeF screen = QGuiApplication::primaryScreen()->physicalSize();   //获取屏幕的实际长宽
+        QRect rect = QGuiApplication::primaryScreen()->geometry();          //获取屏幕分辨率
+
+        qreal wScale,hScale;        //比例计算
+        wScale = screen.width() / static_cast<qreal>(rect.width()) ;      //表示水平方向一个像素点占是多少MM
+        hScale = screen.height() / static_cast<qreal>(rect.height()) ;    //表示垂直方向一个像素点占是多少MM
+
+        qDebug() << "屏幕实际长度:" << screen.width() << ",宽度:" << screen.height();
+
+
+
+        qDebug() << "wScale:" << wScale << ",hScale:" << hScale;
+
+        QSize pxsize;
+        pxsize.setWidth(config.value("pagewidth").toDouble() / wScale + 0.5);
+        pxsize.setHeight(config.value("pageheight").toDouble() / hScale + 0.5);
+
+
+    //    widget->setStyleSheet("background-color: white;");
+        widget->setFixedSize(pxsize);
+        qDebug() << pxsize;
+
+
+        return ;
+    }
     /**
      * @brief retranslateUi     translate Ui
      * @param MainWindow        widget
@@ -2515,6 +2762,7 @@ private:
         actionFileSave->setText(tr("&Save file"));
         actionFileSaveAs->setText(tr("&Save as file"));
         actionConfig->setText(tr("&Config"));
+        actionText->setText(tr("Text"));
     }
     /**
      * @brief filemenuconfig        init file menu config
@@ -2531,9 +2779,10 @@ private:
         });
 
         actionFileSave->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_S));
+        actionFileSave->setEnabled(false);
         menuFile->addAction(actionFileSave);
-        connect(actionFileSave, &QAction::triggered, this, [&](){
-
+        connect(actionFileSave, &QAction::triggered, this, [=](){
+            saveChanges();
         });
 
         menuFile->addAction(actionFileSaveAs);
@@ -2543,14 +2792,11 @@ private:
 
             }
         });
-
         menuFile->addAction(actionFileClose);
         connect(actionFileClose, &QAction::triggered, this, [&](){
 
         });
-
     }
-
     /**
      * @brief configmenuconfig      init config menu config
      */
@@ -2560,9 +2806,12 @@ private:
         connect(actionConfig, &QAction::triggered, this, [&](){
 
             MyDialog dialog(config,this);
+            needsave = false ;
             if(dialog.exec() == QDialog::Accepted){
                 config = dialog.getconfig();
-                qDebug() << config;
+                needsave = true ;
+                setWindowTitle("*" + wintitle);
+                actionFileSave->setEnabled(true);
             }
         });
     }
@@ -2571,20 +2820,119 @@ private:
      * @brief layoutconfig  printer layout
      */
     void layoutconfig(){
-        auto widget = new QWidget;
-        auto griadwidget = new QGridLayout(widget);
+        toolbar->addAction(actionText);
+        QGraphicsScene *scene = new QGraphicsScene(view);
+        view->setScene(scene);
 
-        setCentralWidget(widget);
+        scene->addWidget(widget);
+        Text::typeText text;
+        text.uuid = "abc";
+        text.page = 1 ;
+        text.layer = 0;
+        text.str = "测试一下字符宽度计算是否准确，长度好像不太对";
+        text.var = false;
+        text.varName = "";
+        text.posX = 0;
+        text.posY = 0;
+        text.bColor = QColor(255,255,255,0);
+        text.fColor = QColor(0,0,0,255);
+        text.font = QFont("Arial",32);
+        text.angle = 0 ;
+
+        Text * _text = new Text(text,nullptr);
+        _text->show();
+
+        QSlider *zoomSlider = new QSlider(Qt::Horizontal, this);
+        zoomSlider->setRange(1, 200);
+        zoomSlider->setValue(100);
+        QLabel *zoomLabel = new QLabel(this);
+        zoomLabel->setText("100%");
+
+        connect(zoomSlider, &QSlider::valueChanged, this, [this,zoomLabel](int value) {
+            qreal scale = value / 100.0;
+            view->setTransform(QTransform());
+            view->scale(scale, scale);
+
+            zoomLabel->setText(QString::number(value) + "%");
+        });
+        QVBoxLayout *mainLayout = new QVBoxLayout();
+        mainLayout->addWidget(view);
+        mainLayout->addWidget(zoomSlider);
+        mainLayout->addWidget(zoomLabel);
+
+        QWidget *mainWidget = new QWidget(this);
+        mainWidget->setLayout(mainLayout);
+        setCentralWidget(mainWidget);
+
+
     }
-
+    bool saveChanges(){
+        bool ok =false;
+        QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
+        QSqlDatabase db;
+        if(QSqlDatabase::contains(dbname)){
+            db = QSqlDatabase::database(dbname);
+        }else{
+            db = QSqlDatabase::addDatabase("QSQLITE",dbname);
+        }
+        //addlog(QString("BQDLayout name is %1").arg(dbname).toUtf8(),true);
+        db.setDatabaseName(BQDFile);
+        if(!db.open()){
+            addlog(QString("The BQDLayout file failed to open due to the following reason:%1,file:%2").arg(db.lastError().text(),QString(BQDFile)).toUtf8(),true);
+            return false;
+        }
+        QSqlQuery query(db);
+        QString cmd = QString("update [config] set dpi=%1,pagewidth=%2,pageheight=%3,margeleft=%4,margetop=%5,margeright=%6,margebottom=%7 "
+                              "where id=1 ;"
+                              ).arg(
+                              config.value("dpi"),
+                              config.value("pagewidth"),
+                              config.value("pageheight"),
+                              config.value("margeleft"),
+                              config.value("margetop"),
+                              config.value("margeright"),
+                              config.value("margebottom")
+                              );
+        if(query.exec(cmd)){
+            addlog(QString("Table config update").toUtf8());
+            setWindowTitle(wintitle);
+            actionFileSave->setEnabled(false);
+            needsave = false ;
+            ok = true;
+        }else{
+            ok = false ;
+        }
+        if(db.isOpen()) db.close();
+        return ok;
+    }
 signals:
     void windowClosed();
 
 protected:
 
     void closeEvent(QCloseEvent *event) override {
-        emit windowClosed();
-        event->accept(); // "Allow the window to close."
+        if(needsave){
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::warning(this, tr("Save Changes"),
+                                          tr("Do you want to save your changes before closing?"),
+                                          QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+            if (reply == QMessageBox::Yes) {
+                if (saveChanges()) { // 假设 saveChanges() 是保存逻辑，返回 true 表示保存成功
+                    event->accept(); // 允许窗口关闭
+                } else {
+                    event->ignore(); // 保存失败，不允许窗口关闭
+                }
+            } else if (reply == QMessageBox::No) {
+                event->accept(); // 不保存直接关闭
+            } else if (reply == QMessageBox::Cancel) {
+                event->ignore(); // 用户取消，不关闭窗口
+            }
+        }
+        else {
+            emit windowClosed();
+            event->accept(); // "Allow the window to close."
+        }
     }
 
     void changeEvent(QEvent * e) override {

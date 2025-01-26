@@ -2227,6 +2227,8 @@ public:
     QWidget(parent),
     text(_text)
     {
+    //    setWindowTitle("0");
+    //    setWindowFlags(Qt::Dialog);
         move(text.posX,text.posY);
         show();
     }
@@ -2249,7 +2251,7 @@ private:
         OX270 = 270 ,
         OX360 = 360
     };
-    typeQuadrant calcCoordinate(qreal _angle ,int fontsize , int _width , int _height){
+    typeQuadrant calcCoordinate(qreal _angle ,int ascent , int _width , int _height){
         typeQuadrant quadrant;
         Quadrant _quadrant;         //象限记录
         if(_angle > 0 && _angle < 90) {
@@ -2287,11 +2289,11 @@ private:
             int iiy = _height * qCos(_angle / 180 * M_PI);    //字符偏移后的左边高度
             int iix = _height * qSin(_angle / 180 * M_PI);    //字符便宜后右边偏移量
 
-        //    quadrant.point = QPoint(2,iiy);     //调整起始坐标
-        //    quadrant.size = QSize(ix + iix + 4, iy + iiy + 4);
+            int iiys = (_height - ascent) * qCos(_angle / 180 * M_PI);    //字符偏移后的左边高度
+            int iixs = (_height - ascent) * qSin(_angle / 180 * M_PI);    //字符便宜后右边偏移量
 
-            quadrant.point = QPoint(0,iiy);     //调整起始坐标
-            quadrant.size = QSize(ix + iix + 0, iy + iiy + 0);
+            quadrant.point = QPoint(iixs,iiy - iiys);     //调整起始坐标
+            quadrant.size = QSize(ix + iix, iy + iiy);
 
             break;
         }
@@ -2302,8 +2304,11 @@ private:
             int ix = _height * qCos((_angle - 90) / 180 * M_PI);
             int iy = _height * qSin((_angle - 90) / 180 * M_PI);
 
-            quadrant.point = QPoint(iix + 2 ,2);     //调整起始坐标
-            quadrant.size = QSize(ix + iix + 4 , iy + iiy + 4);
+            int iiys = (_height - ascent) * qCos((_angle - 90) / 180 * M_PI);
+            int iixs = (_height - ascent) * qSin((_angle - 90) / 180 * M_PI);
+
+            quadrant.point = QPoint(iix + iixs,iiys);     //调整起始坐标
+            quadrant.size = QSize(ix + iix, iy + iiy);
             break;
         }
         case ThirdQuadrant:{        //第三象限
@@ -2314,8 +2319,11 @@ private:
             int iix = _height * qCos((90 - (_angle - 180)) / 180 * M_PI);
             int iiy = _height * qSin((90 - (_angle - 180)) / 180 * M_PI);
 
-            quadrant.point = QPoint(ix + iix + 2 ,iy + 2);     //调整起始坐标
-            quadrant.size = QSize(ix + iix + 4, iy + iiy + 4 );
+            int iiys = (_height - ascent) * qCos((90 - (_angle - 180)) / 180 * M_PI);
+            int iixs = (_height - ascent) * qSin((90 - (_angle - 180)) / 180 * M_PI);
+
+            quadrant.point = QPoint(ix + iix - iixs ,iy + iiys);     //调整起始坐标
+            quadrant.size = QSize(ix + iix, iy + iiy );
             break;
         }
         case FourthQuadrant:{       //第四象限
@@ -2325,35 +2333,36 @@ private:
             int iix = _height * qCos((90 - (360 - _angle)) / 180 * M_PI);
             int iiy = _height * qSin((90 - (360 - _angle)) / 180 * M_PI);
 
-            quadrant.point = QPoint(iix,iy + iiy);     //调整起始坐标
-            quadrant.size = QSize(ix + iix + 4 ,iy + iiy + 4);
+            int iiys = (_height - ascent) * qCos((90 - (360 - _angle)) / 180 * M_PI);
+            int iixs = (_height - ascent) * qSin((90 - (360 - _angle)) / 180 * M_PI);
+
+            quadrant.point = QPoint(iix - iixs,iy + iiy - iiys);     //调整起始坐标
+            quadrant.size = QSize(ix + iix,iy + iiy);
             break;
         }
         case OX0:{
-        //    quadrant.point = QPoint(2,_height - 2);     //调整起始坐标
-        //    quadrant.size = QSize(_width + (fontsize / 5) ,_height + (fontsize / 5));
-            quadrant.point = QPoint(0,_height);     //调整起始坐标
-            quadrant.size = QSize(_width ,_height + (fontsize / 5));
+            quadrant.point = QPoint(0,ascent);     //调整起始坐标
+            quadrant.size = QSize(_width,_height);
             break;
         }
         case OX90:{
-            quadrant.point = QPoint(fontsize / 5,2);     //调整起始坐标
-            quadrant.size = QSize(_height + fontsize / 5 ,_width + 4);
+            quadrant.point = QPoint(_height - ascent,0);     //调整起始坐标
+            quadrant.size = QSize(_height,_width);
             break;
         }
         case OX180:{
-            quadrant.point = QPoint(_width , fontsize / 5);     //调整起始坐标
-            quadrant.size = QSize(_width + 4 , _height + fontsize / 5 );
+            quadrant.point = QPoint(_width , _height - ascent);     //调整起始坐标
+            quadrant.size = QSize(_width , _height );
             break;
         }
         case OX270:{
-            quadrant.point = QPoint(_height + fontsize / 5 ,_width );     //调整起始坐标
-            quadrant.size = QSize(_height + fontsize / 5 ,_width + 4 );
+            quadrant.point = QPoint(ascent,_width);     //调整起始坐标
+            quadrant.size = QSize(_height ,_width);
             break;
         }
         case OX360:{
-            quadrant.point = QPoint(2,_height - 2);     //调整起始坐标
-            quadrant.size = QSize(_width + (fontsize / 5) ,_height + (fontsize / 5));
+            quadrant.point = QPoint(0,ascent);     //调整起始坐标
+            quadrant.size = QSize(_width,_height);
             break;
         }
         default:
@@ -2367,19 +2376,23 @@ private:
 protected:
     void paintEvent(QPaintEvent * event) override{
         QPainter painter;
-/*
+
         QFontMetrics metrics(text.font);    //获取符宽度，用于设置坐标
         int mW = metrics.horizontalAdvance(text.str);      //获取字符高度
         int mH = metrics.height();                  //获取高度
     //    qDebug() << "字符宽度:" << mW << ",字符高度:" << mH;
-*/
+
         painter.begin(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setFont(text.font);
-/*
-        typeQuadrant quadrant = calcCoordinate(text.angle,text.font.pointSize(),mW,mH);
+        typeQuadrant quadrant = calcCoordinate(text.angle,metrics.ascent(),mW,mH);
+
+        qDebug() << metrics.ascent() << mH;
+
+
         painter.translate(quadrant.point);
         painter.rotate(text.angle);
+        //qDebug() << angle << quadrant.point;
 
         painter.setBrush(text.bColor); //设置背景色
         painter.setPen(Qt::NoPen);
@@ -2391,7 +2404,9 @@ protected:
         painter.drawText(0,0,text.str);
         painter.end();
         resize(quadrant.size);
-*/
+
+
+        /*
         QFontMetrics metrics(text.font);
         int textHeight = metrics.height();
         int baseline = metrics.ascent();
@@ -2399,9 +2414,9 @@ protected:
         // 在适当的位置绘制文本
         painter.translate(0,baseline);
         painter.drawText(0, 0, text.str);
-
+*/
         // 调整QWidget的大小来适应文本
-        resize(metrics.horizontalAdvance(text.str), textHeight);
+    //    resize(metrics.horizontalAdvance(text.str), textHeight);
     }
 };
 
@@ -2837,10 +2852,9 @@ private:
         text.bColor = QColor(255,255,255,0);
         text.fColor = QColor(0,0,0,255);
         text.font = QFont("Arial",32);
-        text.angle = 0 ;
+        text.angle = 76 ;
 
-        Text * _text = new Text(text,nullptr);
-        _text->show();
+        new Text(text,widget);
 
         QSlider *zoomSlider = new QSlider(Qt::Horizontal, this);
         zoomSlider->setRange(1, 200);

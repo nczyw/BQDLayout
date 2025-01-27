@@ -2215,8 +2215,8 @@ public:
         QString     str         = QString();
         bool        var         = false;
         QString     varName     = QString();
-        double      posX        = 0;
-        double      posY        = 0;
+        int         posX        = 0;
+        int         posY        = 0;
         QColor      bColor      = QColor();
         QColor      fColor      = QColor();
         QFont       font        = QFont();
@@ -2227,8 +2227,6 @@ public:
     QWidget(parent),
     text(_text)
     {
-    //    setWindowTitle("0");
-    //    setWindowFlags(Qt::Dialog);
         move(text.posX,text.posY);
         show();
     }
@@ -2387,7 +2385,7 @@ protected:
         painter.setFont(text.font);
         typeQuadrant quadrant = calcCoordinate(text.angle,metrics.ascent(),mW,mH);
 
-        qDebug() << metrics.ascent() << mH;
+    //    qDebug() << metrics.ascent() << mH;
 
 
         painter.translate(quadrant.point);
@@ -2701,9 +2699,17 @@ private:
     QString wintitle = QString();
     QString BQDFile = QString();
     QMap<QString,QString> config;   //save printer config
-    QSqlDatabase db;
+    qreal wScale,hScale;
+    QVector<Text *> myText;         //save Text
 private:
     void datainit(){
+
+        QSizeF screen = QGuiApplication::primaryScreen()->physicalSize();   //获取屏幕的实际长宽
+        QRect rect = QGuiApplication::primaryScreen()->geometry();          //获取屏幕分辨率
+
+        wScale = screen.width() / static_cast<qreal>(rect.width()) ;      //表示水平方向一个像素点占是多少MM
+        hScale = screen.height() / static_cast<qreal>(rect.height()) ;    //表示垂直方向一个像素点占是多少MM
+
         QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
         QSqlDatabase db;
         if(QSqlDatabase::contains(dbname)){
@@ -2721,7 +2727,7 @@ private:
 
         QSqlQuery query(db);
         QString cmd = QString("select dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
-                              "from config where id=1 "
+                              "from [config] where id=1 "
                               );
         if(!query.exec(cmd)){
             addlog(QString("Configuration query failed due to the following reason:%1").arg(query.lastError().text()).toUtf8(),true);
@@ -2737,27 +2743,48 @@ private:
             config.insert("margebottom",query.value(6).toString());
 
         }
-    //    qDebug() << config;
+
+        cmd = QString("select uuid,page,layer,str,var,varName,posX,posY,bColor,fColor,fontName,fontSize,fontWeight,fontItalic,angle "
+                      "from [StringText]");
+        if(query.exec(cmd)){
+            while (query.next()) {
+                Text::typeText typeText;
+                QStringList bcolorlist = query.value(8).toString().split(",");
+                QStringList fcolorlist = query.value(9).toString().split(",");
+                typeText.uuid       = query.value(0).toString();
+                typeText.page       = query.value(1).toInt();
+                typeText.layer      = query.value(2).toInt();
+                typeText.str        = query.value(3).toString();
+                typeText.var        = query.value(4).toBool();
+                typeText.varName    = query.value(5).toString();
+                typeText.posX       = query.value(6).toDouble() / wScale + 0.5;
+                typeText.posY       = query.value(7).toDouble() / hScale + 0.5;
+                typeText.bColor     = QColor(bcolorlist.at(0).toInt(),bcolorlist.at(1).toInt(),bcolorlist.at(2).toInt(),bcolorlist.at(3).toInt());
+                typeText.fColor     = QColor(fcolorlist.at(0).toInt(),fcolorlist.at(1).toInt(),fcolorlist.at(2).toInt(),fcolorlist.at(3).toInt());
+                typeText.font       = QFont(query.value(10).toString(),query.value(11).toInt(),query.value(12).toInt(),query.value(13).toBool());
+                typeText.angle      = query.value(14).toDouble();
+                myText.append(new Text(typeText,widget));
+            //    qDebug() << typeText.str;
+            }
+        }
+        else{
+            qDebug() << query.lastError().text();
+        }
+
         if(db.isOpen()) db.close();
 
-        QSizeF screen = QGuiApplication::primaryScreen()->physicalSize();   //获取屏幕的实际长宽
-        QRect rect = QGuiApplication::primaryScreen()->geometry();          //获取屏幕分辨率
-
-        qreal wScale,hScale;        //比例计算
-        wScale = screen.width() / static_cast<qreal>(rect.width()) ;      //表示水平方向一个像素点占是多少MM
-        hScale = screen.height() / static_cast<qreal>(rect.height()) ;    //表示垂直方向一个像素点占是多少MM
-
-        qDebug() << "屏幕实际长度:" << screen.width() << ",宽度:" << screen.height();
 
 
+    //    qDebug() << "屏幕实际长度:" << screen.width() << ",宽度:" << screen.height();
 
         qDebug() << "wScale:" << wScale << ",hScale:" << hScale;
 
         QSize pxsize;
-        pxsize.setWidth(config.value("pagewidth").toDouble() / wScale + 0.5);
-        pxsize.setHeight(config.value("pageheight").toDouble() / hScale + 0.5);
+    //    qDebug() << config.value("pagewidth").toDouble() << config.value("margeleft").toDouble() << config.value("margeright").toDouble();
+        pxsize.setWidth((config.value("pagewidth").toDouble() - (config.value("margeleft").toDouble() + config.value("margeright").toDouble())) / wScale + 0.5);
+        pxsize.setHeight((config.value("pageheight").toDouble() - (config.value("margetop").toDouble() + config.value("margebottom").toDouble())) / hScale + 0.5);
 
-
+    //    view->setStyleSheet("background-color: grey;");
     //    widget->setStyleSheet("background-color: white;");
         widget->setFixedSize(pxsize);
         qDebug() << pxsize;
@@ -2840,25 +2867,10 @@ private:
         view->setScene(scene);
 
         scene->addWidget(widget);
-        Text::typeText text;
-        text.uuid = "abc";
-        text.page = 1 ;
-        text.layer = 0;
-        text.str = "测试一下字符宽度计算是否准确，长度好像不太对";
-        text.var = false;
-        text.varName = "";
-        text.posX = 0;
-        text.posY = 0;
-        text.bColor = QColor(255,255,255,0);
-        text.fColor = QColor(0,0,0,255);
-        text.font = QFont("Arial",32);
-        text.angle = 76 ;
-
-        new Text(text,widget);
 
         QSlider *zoomSlider = new QSlider(Qt::Horizontal, this);
-        zoomSlider->setRange(1, 200);
-        zoomSlider->setValue(100);
+        zoomSlider->setRange(1, 400);
+        zoomSlider->setValue(200);
         QLabel *zoomLabel = new QLabel(this);
         zoomLabel->setText("100%");
 

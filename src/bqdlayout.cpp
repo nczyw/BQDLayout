@@ -2230,74 +2230,77 @@ public:
         move(text.posX,text.posY);
         show();
     }
+    typeText getText() const{
+        return text;
+    }
 private:
     typeText text;
 
 private:
-    typedef struct typeQuadrant {
-        QPoint point;       //原点坐标位置需要移动的地方
-        QSize  size;        //最小外接矩形
-    }typeQuadrant;
-    enum Quadrant{
-        FirstQuadrant = 1 ,
-        SecondQuadrant,
-        ThirdQuadrant,
-        FourthQuadrant,
+    typedef struct typeArea {
+        QPoint OriginPoint;       //原点坐标位置需要移动的地方
+        QSize  MiniRect;        //最小外接矩形
+    }typeArea;
+    enum Area{
+        FirstArea = 1 ,
+        SecondArea ,
+        ThirdArea ,
+        FourthArea ,
         OX0 = 0,
         OX90 = 90,
         OX180 = 180 ,
         OX270 = 270 ,
         OX360 = 360
     };
-    typeQuadrant calcCoordinate(qreal _angle ,int ascent , int _width , int _height){
-        typeQuadrant quadrant;
-        Quadrant _quadrant;         //象限记录
+    typeArea calcCoordinate(qreal _angle ,int ascent , int _width , int _height){
+        typeArea area;
+        Area _area;
         if(_angle > 0 && _angle < 90) {
-            _quadrant = FirstQuadrant;
+            _area = FirstArea;
         }
         else if((_angle > 90) && (_angle < 180)){
-            _quadrant = SecondQuadrant;
+            _area = SecondArea;
         }
         else if((_angle > 180) && (_angle < 270)){
-            _quadrant = ThirdQuadrant;
+            _area = ThirdArea;
         }
         else if((_angle > 270) && (_angle < 360)){
-            _quadrant = FourthQuadrant;
+            _area = FourthArea;
         }
         else if(_angle == 0){
-            _quadrant = OX0;
+            _area = OX0;
         }
         else if(_angle == 90){
-            _quadrant = OX90;
+            _area = OX90;
         }
         else if(_angle == 180){
-            _quadrant = OX180;
+            _area = OX180;
         }
         else if(_angle == 270){
-            _quadrant = OX270;
+            _area = OX270;
         }
         else {
-            _quadrant = OX360;
+            _area = OX360;
         }
-        switch (_quadrant) {
-        case FirstQuadrant: {        //第一象限计算公式
+        switch (_area) {
+        case FirstArea: {        //one area
             int iy = _width * qCos((90 - _angle) / 180 * M_PI);
             int ix = _width * qSin((90 - _angle) / 180 * M_PI);
 
-            int iiy = _height * qCos(_angle / 180 * M_PI);    //字符偏移后的左边高度
-            int iix = _height * qSin(_angle / 180 * M_PI);    //字符便宜后右边偏移量
+            int iiy = _height * qCos(_angle / 180 * M_PI);
+            int iix = _height * qSin(_angle / 180 * M_PI);
 
-            int iiys = (_height - ascent) * qCos(_angle / 180 * M_PI);    //字符偏移后的左边高度
-            int iixs = (_height - ascent) * qSin(_angle / 180 * M_PI);    //字符便宜后右边偏移量
+            int iiys = (_height - ascent) * qCos(_angle / 180 * M_PI);
+            int iixs = (_height - ascent) * qSin(_angle / 180 * M_PI);
 
-            quadrant.point = QPoint(iixs,iiy - iiys);     //调整起始坐标
-            quadrant.size = QSize(ix + iix, iy + iiy);
+            area.OriginPoint = QPoint(iixs,iiy - iiys);
+            area.MiniRect = QSize(ix + iix, iy + iiy);
 
             break;
         }
-        case SecondQuadrant:{       //第二象限计算公式
-            int iix = _width * qCos((90 - (_angle - 90)) / 180 * M_PI); //邻边
-            int iiy = _width * qSin((90 - (_angle - 90)) / 180 * M_PI); //对边
+        case SecondArea:{       //two area
+            int iix = _width * qCos((90 - (_angle - 90)) / 180 * M_PI);
+            int iiy = _width * qSin((90 - (_angle - 90)) / 180 * M_PI);
 
             int ix = _height * qCos((_angle - 90) / 180 * M_PI);
             int iy = _height * qSin((_angle - 90) / 180 * M_PI);
@@ -2305,11 +2308,11 @@ private:
             int iiys = (_height - ascent) * qCos((_angle - 90) / 180 * M_PI);
             int iixs = (_height - ascent) * qSin((_angle - 90) / 180 * M_PI);
 
-            quadrant.point = QPoint(iix + iixs,iiys);     //调整起始坐标
-            quadrant.size = QSize(ix + iix, iy + iiy);
+            area.OriginPoint = QPoint(iix + iixs,iiys);
+            area.MiniRect = QSize(ix + iix, iy + iiy);
             break;
         }
-        case ThirdQuadrant:{        //第三象限
+        case ThirdArea:{        //three area
 
             int ix = _width * qSin((90 - (_angle - 180)) / 180 * M_PI);
             int iy = _width * qCos((90 - (_angle - 180)) / 180 * M_PI);
@@ -2320,13 +2323,13 @@ private:
             int iiys = (_height - ascent) * qCos((90 - (_angle - 180)) / 180 * M_PI);
             int iixs = (_height - ascent) * qSin((90 - (_angle - 180)) / 180 * M_PI);
 
-            quadrant.point = QPoint(ix + iix - iixs ,iy + iiys);     //调整起始坐标
-            quadrant.size = QSize(ix + iix, iy + iiy );
+            area.OriginPoint = QPoint(ix + iix - iixs ,iy + iiys);
+            area.MiniRect = QSize(ix + iix, iy + iiy );
             break;
         }
-        case FourthQuadrant:{       //第四象限
-            int ix = _width * qCos((360 - _angle) / 180 * M_PI);    //邻边
-            int iy = _width * qSin((360 - _angle) / 180 * M_PI);    //对边
+        case FourthArea:{       //four area
+            int ix = _width * qCos((360 - _angle) / 180 * M_PI);
+            int iy = _width * qSin((360 - _angle) / 180 * M_PI);
 
             int iix = _height * qCos((90 - (360 - _angle)) / 180 * M_PI);
             int iiy = _height * qSin((90 - (360 - _angle)) / 180 * M_PI);
@@ -2334,41 +2337,41 @@ private:
             int iiys = (_height - ascent) * qCos((90 - (360 - _angle)) / 180 * M_PI);
             int iixs = (_height - ascent) * qSin((90 - (360 - _angle)) / 180 * M_PI);
 
-            quadrant.point = QPoint(iix - iixs,iy + iiy - iiys);     //调整起始坐标
-            quadrant.size = QSize(ix + iix,iy + iiy);
+            area.OriginPoint = QPoint(iix - iixs,iy + iiy - iiys);
+            area.MiniRect = QSize(ix + iix,iy + iiy);
             break;
         }
         case OX0:{
-            quadrant.point = QPoint(0,ascent);     //调整起始坐标
-            quadrant.size = QSize(_width,_height);
+            area.OriginPoint = QPoint(0,ascent);
+            area.MiniRect = QSize(_width,_height);
             break;
         }
         case OX90:{
-            quadrant.point = QPoint(_height - ascent,0);     //调整起始坐标
-            quadrant.size = QSize(_height,_width);
+            area.OriginPoint = QPoint(_height - ascent,0);
+            area.MiniRect = QSize(_height,_width);
             break;
         }
         case OX180:{
-            quadrant.point = QPoint(_width , _height - ascent);     //调整起始坐标
-            quadrant.size = QSize(_width , _height );
+            area.OriginPoint = QPoint(_width , _height - ascent);
+            area.MiniRect = QSize(_width , _height );
             break;
         }
         case OX270:{
-            quadrant.point = QPoint(ascent,_width);     //调整起始坐标
-            quadrant.size = QSize(_height ,_width);
+            area.OriginPoint = QPoint(ascent,_width);
+            area.MiniRect = QSize(_height ,_width);
             break;
         }
         case OX360:{
-            quadrant.point = QPoint(0,ascent);     //调整起始坐标
-            quadrant.size = QSize(_width,_height);
+            area.OriginPoint = QPoint(0,ascent);
+            area.MiniRect = QSize(_width,_height);
             break;
         }
         default:
-            quadrant.point = QPoint(0,0);     //调整起始坐标
-            quadrant.size = QSize(0,0);
+            area.OriginPoint = QPoint(0,0);
+            area.MiniRect = QSize(0,0);
             break;
         }
-        return quadrant ;
+        return area ;
     }
 
 protected:
@@ -2383,14 +2386,14 @@ protected:
         painter.begin(this);
         painter.setRenderHint(QPainter::Antialiasing);
         painter.setFont(text.font);
-        typeQuadrant quadrant = calcCoordinate(text.angle,metrics.ascent(),mW,mH);
+        typeArea area = calcCoordinate(text.angle,metrics.ascent(),mW,mH);
 
     //    qDebug() << metrics.ascent() << mH;
 
 
-        painter.translate(quadrant.point);
+        painter.translate(area.OriginPoint);
         painter.rotate(text.angle);
-        //qDebug() << angle << quadrant.point;
+        //qDebug() << angle << area.point;
 
         painter.setBrush(text.bColor); //设置背景色
         painter.setPen(Qt::NoPen);
@@ -2401,20 +2404,7 @@ protected:
 
         painter.drawText(0,0,text.str);
         painter.end();
-        resize(quadrant.size);
-
-
-        /*
-        QFontMetrics metrics(text.font);
-        int textHeight = metrics.height();
-        int baseline = metrics.ascent();
-
-        // 在适当的位置绘制文本
-        painter.translate(0,baseline);
-        painter.drawText(0, 0, text.str);
-*/
-        // 调整QWidget的大小来适应文本
-    //    resize(metrics.horizontalAdvance(text.str), textHeight);
+        resize(area.MiniRect);
     }
 };
 
@@ -2706,6 +2696,7 @@ private:
 
         QSizeF screen = QGuiApplication::primaryScreen()->physicalSize();   //获取屏幕的实际长宽
         QRect rect = QGuiApplication::primaryScreen()->geometry();          //获取屏幕分辨率
+        qDebug() << screen << rect;
 
         wScale = screen.width() / static_cast<qreal>(rect.width()) ;      //表示水平方向一个像素点占是多少MM
         hScale = screen.height() / static_cast<qreal>(rect.height()) ;    //表示垂直方向一个像素点占是多少MM
@@ -2757,14 +2748,13 @@ private:
                 typeText.str        = query.value(3).toString();
                 typeText.var        = query.value(4).toBool();
                 typeText.varName    = query.value(5).toString();
-                typeText.posX       = query.value(6).toDouble() / wScale + 0.5;
-                typeText.posY       = query.value(7).toDouble() / hScale + 0.5;
+                typeText.posX       = query.value(6).toDouble() / wScale ;
+                typeText.posY       = query.value(7).toDouble() / hScale ;
                 typeText.bColor     = QColor(bcolorlist.at(0).toInt(),bcolorlist.at(1).toInt(),bcolorlist.at(2).toInt(),bcolorlist.at(3).toInt());
                 typeText.fColor     = QColor(fcolorlist.at(0).toInt(),fcolorlist.at(1).toInt(),fcolorlist.at(2).toInt(),fcolorlist.at(3).toInt());
                 typeText.font       = QFont(query.value(10).toString(),query.value(11).toInt(),query.value(12).toInt(),query.value(13).toBool());
                 typeText.angle      = query.value(14).toDouble();
                 myText.append(new Text(typeText,widget));
-            //    qDebug() << typeText.str;
             }
         }
         else{
@@ -2773,23 +2763,7 @@ private:
 
         if(db.isOpen()) db.close();
 
-
-
-    //    qDebug() << "屏幕实际长度:" << screen.width() << ",宽度:" << screen.height();
-
-        qDebug() << "wScale:" << wScale << ",hScale:" << hScale;
-
-        QSize pxsize;
-    //    qDebug() << config.value("pagewidth").toDouble() << config.value("margeleft").toDouble() << config.value("margeright").toDouble();
-        pxsize.setWidth((config.value("pagewidth").toDouble() - (config.value("margeleft").toDouble() + config.value("margeright").toDouble())) / wScale + 0.5);
-        pxsize.setHeight((config.value("pageheight").toDouble() - (config.value("margetop").toDouble() + config.value("margebottom").toDouble())) / hScale + 0.5);
-
-    //    view->setStyleSheet("background-color: grey;");
-    //    widget->setStyleSheet("background-color: white;");
-        widget->setFixedSize(pxsize);
-        qDebug() << pxsize;
-
-
+        resetwidgetsize();
         return ;
     }
     /**
@@ -2854,8 +2828,21 @@ private:
                 needsave = true ;
                 setWindowTitle("*" + wintitle);
                 actionFileSave->setEnabled(true);
+                resetwidgetsize();
             }
         });
+    }
+
+    void resetwidgetsize(){
+        QSize pxsize;
+        //    qDebug() << config.value("pagewidth").toDouble() << config.value("margeleft").toDouble() << config.value("margeright").toDouble();
+        pxsize.setWidth((config.value("pagewidth").toDouble() - (config.value("margeleft").toDouble() + config.value("margeright").toDouble())) / wScale);
+        pxsize.setHeight((config.value("pageheight").toDouble() - (config.value("margetop").toDouble() + config.value("margebottom").toDouble())) / hScale);
+
+        //    view->setStyleSheet("background-color: grey;");
+        //    widget->setStyleSheet("background-color: white;");
+        widget->setFixedSize(pxsize);
+        //qDebug() << pxsize;
     }
 
     /**
@@ -2869,8 +2856,8 @@ private:
         scene->addWidget(widget);
 
         QSlider *zoomSlider = new QSlider(Qt::Horizontal, this);
-        zoomSlider->setRange(1, 400);
-        zoomSlider->setValue(200);
+        zoomSlider->setRange(1, 200);
+        zoomSlider->setValue(100);
         QLabel *zoomLabel = new QLabel(this);
         zoomLabel->setText("100%");
 
@@ -2893,7 +2880,7 @@ private:
 
     }
     bool saveChanges(){
-        bool ok =false;
+        bool ok =true;
         QString dbname = "BQDCodeDB_" + QStringLiteral("0x%1").arg(quintptr(QThread::currentThreadId()), 0, 16, QLatin1Char('0'));
         QSqlDatabase db;
         if(QSqlDatabase::contains(dbname)){
@@ -2924,9 +2911,39 @@ private:
             setWindowTitle(wintitle);
             actionFileSave->setEnabled(false);
             needsave = false ;
-            ok = true;
         }else{
             ok = false ;
+        }
+        for(int i = 0 ; i < myText.size(); ++i){
+            Text * text = myText.at(i);
+
+            QString bColor = QString("%1,%2,%3,%4").arg(QString::number(text->getText().bColor.red()),QString::number(text->getText().bColor.green()),QString::number(text->getText().bColor.blue()),QString::number(text->getText().bColor.alpha()));
+            QString fColor = QString("%1,%2,%3,%4").arg(QString::number(text->getText().fColor.red()),QString::number(text->getText().fColor.green()),QString::number(text->getText().fColor.blue()),QString::number(text->getText().fColor.alpha()));
+            QString temp1 = QString("update [StringText] set page=%1,layer=%2,str='%3',var=%4,varName='%5',posX=%6,posY=%7,bColor='%8',fColor='%10',").arg(
+                                    QString::number(text->getText().page),
+                                    QString::number(text->getText().layer),
+                                    text->getText().str,
+                                    QString::number(text->getText().var),
+                                    text->getText().varName,
+                                    QString::number(text->getText().posX * wScale),
+                                    QString::number(text->getText().posY * hScale),
+                                    bColor,
+                                    fColor
+                                    );
+            QString temp2 = QString("fontName='%2',fontSize=%3,fontWeight=%4,fontItalic=%5,angle=%6 "
+                                    "where uuid='%1'").arg(
+                                    text->getText().uuid,
+                                    text->getText().font.family(),
+                                    QString::number(text->getText().font.pointSize()),
+                                    QString::number(text->getText().font.weight()),
+                                    QString::number(text->getText().font.italic()),
+                                    QString::number(text->getText().angle)
+                                    );
+            cmd = temp1 + temp2;
+            if(query.exec(cmd)){
+                addlog(QString("Text:uuid=%1 save finished").arg(text->getText().uuid).toUtf8());
+            }
+
         }
         if(db.isOpen()) db.close();
         return ok;

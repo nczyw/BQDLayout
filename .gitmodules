@@ -1,6 +1,3 @@
 [submodule "external/BQDCode"]
 	path = external/BQDCode
 	url = https://github.com/nczyw/BQDCode.git
-[submodule "external/spdlog"]
-	path = external/spdlog
-	url = https://github.com/gabime/spdlog.git

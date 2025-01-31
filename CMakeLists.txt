@@ -15,7 +15,6 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Sql PrintSupport)
 
 set(DISABLE_SubMoudle_INSTALL ON CACHE BOOL "Disable install submodule libray" FORCE)
-add_subdirectory(external/spdlog)
 add_subdirectory(external/BQDCode)
 
 if (MSVC)
@@ -31,7 +30,6 @@ add_library(${PRONAME} SHARED
 target_link_libraries(${PRONAME} PRIVATE
                         Qt${QT_VERSION_MAJOR}::Sql
                         Qt${QT_VERSION_MAJOR}::PrintSupport
-                        spdlog
                         BQDCode
 )
 target_include_directories(${PRONAME} PUBLIC

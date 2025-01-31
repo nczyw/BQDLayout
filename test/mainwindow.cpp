@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     //    createBQDLayoutFile();
     //    printfBQDCode("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd","C:/Users/Sublime/Desktop/pdftest/NewBQD.pdf",1,nullptr);
         settingsBQDLayout("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd",static_cast<void *>(this));
+    qDebug() << "I  quited";
     });
 }
 

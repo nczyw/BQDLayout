@@ -344,7 +344,7 @@ static bool getconfig(const char * dbfile , int &dpi , QPageSize &pagesize ,  QM
     //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
 
     QSqlQuery query(db);
-    QString cmd = QString("select dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
+    QString cmd = QString("select pdfdpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
                           "from config where id=1 "
                           );
     if(!query.exec(cmd)){
@@ -1608,25 +1608,19 @@ static bool readPictrue(QString dbfile, int page , int dpiX,int dpiY){
  * @param err       Is it an error option.
  */
 static void addlog(const QByteArray &log , const bool &err){
-    // 确保 logs 目录存在
     QString logDir = QCoreApplication::applicationDirPath() + "/logs";
     QDir().mkpath(logDir);
 
-    // 生成日志文件名
     QString logFilePath = logDir + QString("/BQDLayout_%1.log").arg(QDate::currentDate().toString("yyyy-MM-dd"));
 
-    // 打开日志文件（追加模式）
     QFile logFile(logFilePath);
     if (logFile.open(QFile::Append | QFile::Text)) {
         QTextStream out(&logFile);
 
-        // 获取当前时间
         QString timeStamp = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
 
-        // 日志级别
         QString level = err ? "error" : "info";
 
-        // 写入日志
         QString message = QString("[%1] [BQDLayout] [%2] %3\n").arg(timeStamp, level, log);
         qDebug() << message.removeLast();
         out << message;
@@ -1671,8 +1665,8 @@ BQDError createBQDLayoutFile(){
     //Attempt to create the config table.
     QString cmd = R"(
         create table if not exists [config] (
-            id integer primary key check(id = 1) ,
-            dpi integer not null ,
+            id integer primary key not null check(id = 1) ,
+            pdfdpi integer not null ,
             pagewidth double not null ,
             pageheight double not null,
             margeleft double not null ,
@@ -1687,7 +1681,7 @@ BQDError createBQDLayoutFile(){
         return BQDCBCErr ;
     }else{
         addlog(QString("Configuration file created successfully.").toUtf8());
-        cmd = "insert into [config](id,dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom) values (1,1200,210,297,1,1,1,1)";
+        cmd = "insert into [config](id,pdfdpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom) values (1,1200,210,297,1,1,1,1)";
         if(!query.exec(cmd)){
             addlog(QString("The record already exists and does not need to be added again.").toUtf8());
         }else{
@@ -2341,15 +2335,17 @@ public:
         double      angle       = 0 ;
     }typeText;
 public:
-    explicit Text(typeText _text ,QGraphicsItem* parent = nullptr):
-//    QObject(nullptr),
+    explicit Text(typeText _text , int precision , QGraphicsItem* parent = nullptr):
+    QObject(nullptr),
     QGraphicsItemGroup(parent),
-    text(_text)
+    text(_text),
+    Precision(precision)
     {
         setFlag(QGraphicsItem::ItemSendsGeometryChanges, true); // 必须启用
         setFlag(QGraphicsItem::ItemIsMovable, true);    // 允许拖动
         setFlag(QGraphicsItem::ItemIsSelectable, true); // 可选（可选但推荐）
-        textItem = new QGraphicsTextItem(this);
+        setFlag(QGraphicsItem::ItemHasNoContents, false);
+
         textItem->setFlag(QGraphicsItem::ItemIsFocusable, true); // 允许聚焦编辑
         textItem->setFlag(QGraphicsItem::ItemIsMovable, false);  // 禁止文本项单独移动
         textItem->document()->setDocumentMargin(0);
@@ -2358,8 +2354,7 @@ public:
         textItem->setFont(text.font);
         textItem->setZValue(1);
         setPos(text.posX,text.posY);
-        setFlag(QGraphicsItem::ItemHasNoContents, false);
-    //    update();
+
     }
     ~Text(){
 
@@ -2370,7 +2365,8 @@ public:
     }
 private:
     typeText text;
-    QGraphicsTextItem * textItem = nullptr;
+    int Precision;
+    QGraphicsTextItem * textItem = new QGraphicsTextItem(this);
 protected:
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override {
         if (event->button() == Qt::LeftButton) {
@@ -2380,9 +2376,9 @@ protected:
     }
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override {
         QMenu menu;
-        QAction *moveAction = menu.addAction(("Move"));
-        QAction *deleteAction = menu.addAction(("Delete"));
-        QAction *propertiesAction = menu.addAction(("Properties"));
+        QAction *moveAction = menu.addAction(tr("Move"));
+        QAction *deleteAction = menu.addAction(tr("Delete"));
+        QAction *propertiesAction = menu.addAction(tr("Properties"));
 
         QAction *selectedAction = menu.exec(event->screenPos());
         if (selectedAction == moveAction) {
@@ -2751,7 +2747,7 @@ private:
     void retranslateUi(QDialog *Dialog){
         Q_UNUSED(Dialog);
         setWindowTitle(tr("Printer settings"));
-        labelDPI->setText(tr("DPI:"));
+        labelDPI->setText(tr("PdfDPI:"));
         labelPageSizeId->setText(tr("PageSizeId:"));
         labelPageWidth->setText(tr("PageWidth(MM):"));
         labelPageHeight->setText(tr("PageHeight(MM):"));
@@ -2806,7 +2802,7 @@ private:
      */
     void datainit(){
         //display
-        spinboxDPI->setValue(config.value("dpi").toInt());
+        spinboxDPI->setValue(config.value("pdfdpi").toInt());
         comboboxPageSizeId->setCurrentText(getPaperName(config.value("pagewidth").toInt(),config.value("pageheight").toInt()));
         doublespinboxPageWidth->setValue(config.value("pagewidth").toInt());
         doublespinboxPageHeight->setValue(config.value("pageheight").toInt());
@@ -2838,7 +2834,7 @@ private:
         });
 
         connect(btnOk,&QPushButton::clicked,this,[&]{
-            config["dpi"] = QString::number(spinboxDPI->value());
+            config["pdfdpi"] = QString::number(spinboxDPI->value());
             config["PageSizeId"] = QString::number(comboboxPageSizeId->currentIndex());
             config["pagewidth"] = QString::number(doublespinboxPageWidth->value());
             config["pageheight"] = QString::number(doublespinboxPageHeight->value());
@@ -2966,6 +2962,7 @@ private:
     int screendpiX = 0,screendpiY = 0;
     QSize allsize;                  //view size
     int pagecount = 0 ;             //page count
+    int ScalingFactor = 100;
 private:
     void datainit(){
         screendpiX = QGuiApplication::primaryScreen()->physicalDotsPerInchX();
@@ -2987,7 +2984,7 @@ private:
         //addlog(QString("The BQDLayout file was opened successfully.%1").arg(dbfile).toUtf8());
 
         QSqlQuery query(db);
-        QString cmd = QString("select dpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
+        QString cmd = QString("select pdfdpi,pagewidth,pageheight,margeleft,margetop,margeright,margebottom "
                               "from [config] where id=1 "
                               );
         if(!query.exec(cmd)){
@@ -2995,7 +2992,7 @@ private:
             return ;
         }else{
             query.first();
-            config.insert("dpi",query.value(0).toString());
+            config.insert("pdfdpi",query.value(0).toString());
             config.insert("pagewidth",query.value(1).toString());
             config.insert("pageheight",query.value(2).toString());
             config.insert("margeleft",query.value(3).toString());
@@ -3022,16 +3019,16 @@ private:
                     typeText.str        = query.value(3).toString();
                     typeText.var        = query.value(4).toBool();
                     typeText.varName    = query.value(5).toString();
-                    typeText.posX       = query.value(6).toDouble() * config.value("dpi").toInt() / 25.4 ;
-                    typeText.posY       = query.value(7).toDouble() * config.value("dpi").toInt() / 25.4 ;
+                    typeText.posX       = query.value(6).toDouble() * ScalingFactor;
+                    typeText.posY       = query.value(7).toDouble() * ScalingFactor;
                     typeText.bColor     = QColor(bcolorlist.at(0).toInt(),bcolorlist.at(1).toInt(),bcolorlist.at(2).toInt(),bcolorlist.at(3).toInt());
                     typeText.fColor     = QColor(fcolorlist.at(0).toInt(),fcolorlist.at(1).toInt(),fcolorlist.at(2).toInt(),fcolorlist.at(3).toInt());
                     typeText.font.setFamily(query.value(10).toString());
-                    typeText.font.setPixelSize(query.value(11).toInt() * config.value("dpi").toInt() / 25.4);
+                    typeText.font.setPixelSize(query.value(11).toInt() * ScalingFactor);
                     typeText.font.setWeight(QFont::Weight(query.value(12).toInt()));
                     typeText.font.setItalic(query.value(13).toBool());
                     typeText.angle      = query.value(14).toDouble();
-                    Text * text = new Text(typeText);
+                    Text * text = new Text(typeText,ScalingFactor);
                     myText.append(text);
                     scene.last()->addItem(text);
                     connect(text,&Text::signalDelete,this,&MyMainWindow::slotDelete);
@@ -3043,21 +3040,16 @@ private:
                 ++page;
             }
             else{
-                qDebug() << query.lastError().text();
+                addlog(QString("Get table:StringText error,%1").arg(query.lastError().text()).toUtf8(),true);
                 break;
             }
         }
         pagecount = page ;
 
         if(db.isOpen()) db.close();
-        qDebug() << scene.count();
         view->setScene(scene.at(0));
         resetwidgetsize();
         connect(comboboxPage,&QComboBox::currentIndexChanged,this,[this](int index){
-            /*
-            if (view->scene()) {
-                view->scene()->clear();  // **确保旧场景清理**
-            }*/
             view->setScene(scene.at(index));
         });
 
@@ -3113,7 +3105,7 @@ private:
         });
         menuFile->addAction(actionFileClose);
         connect(actionFileClose, &QAction::triggered, this, [&](){
-            qDebug() << "view current size :" << view->size();
+
         });
     }
     /**
@@ -3138,19 +3130,18 @@ private:
 
     void resetwidgetsize(){
         QSize pxsize;
-        pxsize.setWidth((config.value("pagewidth").toDouble() - (config.value("margeleft").toDouble() + config.value("margeright").toDouble())) * config.value("dpi").toInt() / 25.4);
-        pxsize.setHeight((config.value("pageheight").toDouble() - (config.value("margetop").toDouble() + config.value("margebottom").toDouble())) * config.value("dpi").toInt() / 25.4);
-        qDebug() << pxsize;
+        pxsize.setWidth((config.value("pagewidth").toDouble() - (config.value("margeleft").toDouble() + config.value("margeright").toDouble())) * ScalingFactor);
+        pxsize.setHeight((config.value("pageheight").toDouble() - (config.value("margetop").toDouble() + config.value("margebottom").toDouble())) * ScalingFactor);
         view->setSceneRect(0, 0, pxsize.width(), pxsize.height());
 
-        QTimer::singleShot(0,this, [=] {
+    //    QTimer::singleShot(0,this, [=] {
             int scrollbarWidth = view->verticalScrollBar()->sizeHint().width();
             int scrollbarHeight = view->horizontalScrollBar()->sizeHint().height();
 
             allsize = QSize(pxsize.width() + scrollbarWidth, pxsize.height() + scrollbarHeight);
             view->setMaximumSize(allsize);
-            qDebug() << "view max size :" << view->maximumSize();
-        });
+        //    qDebug() << "view max size :" << view->maximumSize();
+    //    });
     }
 
     /**
@@ -3164,10 +3155,18 @@ private:
         QLabel *zoomLabel = new QLabel(this);
         zoomLabel->setText("100%");
         view->setContentsMargins(5, 5, 5, 5);
-        //view->setFrameStyle(QFrame::NoFrame);
 
-        connect(zoomSlider, &QSlider::valueChanged, this, [this, zoomLabel](int value) {
-            qreal scale = value / 100.0;
+        // 计算物理像素和逻辑像素的比例
+        const qreal dpi = QApplication::primaryScreen()->physicalDotsPerInch();
+        const qreal physicalPixelSize = 25.4 / dpi;  // 单位：mm/像素
+        const qreal userPixelSize = 0.01;           // 用户设置的mm/像素
+        const qreal baseScale = userPixelSize / physicalPixelSize;
+
+        view->setTransform(QTransform());
+        view->scale(baseScale, baseScale);
+
+        connect(zoomSlider, &QSlider::valueChanged, this, [this, zoomLabel,baseScale](int value) {
+            qreal scale = baseScale * (value / 100.0);
             view->setTransform(QTransform());
             view->scale(scale, scale);
             view->setMaximumSize(allsize * scale);
@@ -3215,10 +3214,10 @@ private:
             return false;
         }
         QSqlQuery query(db);
-        QString cmd = QString("update [config] set dpi=%1,pagewidth=%2,pageheight=%3,margeleft=%4,margetop=%5,margeright=%6,margebottom=%7 "
+        QString cmd = QString("update [config] set pdfdpi=%1,pagewidth=%2,pageheight=%3,margeleft=%4,margetop=%5,margeright=%6,margebottom=%7 "
                               "where id=1 ;"
                               ).arg(
-                              config.value("dpi"),
+                              config.value("pdfdpi"),
                               config.value("pagewidth"),
                               config.value("pageheight"),
                               config.value("margeleft"),

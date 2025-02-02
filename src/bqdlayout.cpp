@@ -2315,6 +2315,74 @@ protected:
     }
 };
 */
+class OMove : public QDialog {
+    Q_OBJECT
+public:
+    explicit OMove(const QPointF & _pointf , QWidget * parent = nullptr):
+    pointf(_pointf / 100),
+    QDialog(parent)
+    {
+        layoutinit();
+        retranslateUi(this);
+        datainit();
+        connectinit();
+    }
+    QPointF getCoordinates(){
+        return pointf * 100;
+    }
+private:
+    QLabel * labelX = new QLabel(this);
+    QDoubleSpinBox * spinboxX = new QDoubleSpinBox(this);
+    QLabel * labelY = new QLabel(this);
+    QDoubleSpinBox * spinboxY = new QDoubleSpinBox(this);
+    QPushButton * btnOK = new QPushButton(this);
+private:
+    QPointF pointf;
+
+    void layoutinit(){
+        auto gridlayout = new QGridLayout(this);
+        gridlayout->addWidget(labelX,0,0,1,1); labelX->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        gridlayout->addWidget(spinboxX,0,1,1,1);spinboxX->setRange(0,999999999999);spinboxX->setDecimals(2);
+        gridlayout->addWidget(labelY,1,0,1,1);labelY->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
+        gridlayout->addWidget(spinboxY,1,1,1,1);spinboxY->setRange(0,999999999999);spinboxY->setDecimals(2);
+        gridlayout->addWidget(btnOK,2,1,1,1);
+        gridlayout->setColumnStretch(0,0);gridlayout->setColumnStretch(1,1);
+    }
+
+    void retranslateUi(QDialog * dialog){
+        dialog->setWindowTitle(tr("Coordinates"));
+        labelX->setText(tr("X(MM):"));
+        labelY->setText(tr("Y(MM):"));
+        btnOK->setText(tr("OK"));
+    }
+
+    void datainit(){
+        spinboxX->setValue(pointf.x());
+        spinboxY->setValue(pointf.y());
+    }
+
+    void connectinit(){
+        connect(btnOK,&QPushButton::clicked,this,[&]{
+            pointf = QPointF(spinboxX->value(),spinboxY->value());
+            accept();
+        });
+    }
+protected:
+    /**
+     * @brief changeEvent   translate event
+     * @param e             event
+     */
+    void changeEvent(QEvent * e) override {
+        switch (e->type()) {
+        case QEvent::LanguageChange :
+            retranslateUi(this);
+            break;
+        default:
+            break;
+        }
+        QDialog::changeEvent(e);
+    }
+};
 
 #include <QInputDialog>
 class Text : public QObject , public QGraphicsItemGroup {
@@ -2356,12 +2424,8 @@ public:
         setPos(text.posX,text.posY);
 
     }
-    ~Text(){
-
-    }
-    void setRotations(double angle){
-        text.angle = angle;
-        update();
+    typeText getText(){
+        return text;
     }
 private:
     typeText text;
@@ -2370,7 +2434,7 @@ private:
 protected:
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override {
         if (event->button() == Qt::LeftButton) {
-        //    showPropertiesDialog();
+
         }
         QGraphicsItemGroup::mouseDoubleClickEvent(event);
     }
@@ -2382,13 +2446,11 @@ protected:
 
         QAction *selectedAction = menu.exec(event->screenPos());
         if (selectedAction == moveAction) {
-            // 移动操作
-            bool ok;
-            int newX = QInputDialog::getInt(nullptr, "Move", "X:", text.posX, -10000, 10000, 1, &ok);
-            if (!ok) return;
-            int newY = QInputDialog::getInt(nullptr, "Move", "Y:", text.posY, -10000, 10000, 1, &ok);
-            if (!ok) return;
-            setPos(newX, newY);
+            OMove omove(pos());
+            if(omove.exec() == QDialog::Accepted){
+                setPos(omove.getCoordinates());
+                emit signalsaveChange();
+            }
         } else if (selectedAction == deleteAction) {
             // 删除操作
             emit signalDelete(this);
@@ -2413,9 +2475,10 @@ protected:
         return textItem->boundingRect();
     }
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override {
-        if (change == ItemPositionHasChanged) { // 最终确认的位置
+        if (change == ItemPositionHasChanged) {
             text.posX = pos().x();
             text.posY = pos().y();
+            emit signalsaveChange();
         }
         return QGraphicsItemGroup::itemChange(change, value);
     }
@@ -2466,6 +2529,7 @@ private:
     */
 signals:
     void signalDelete(Text * text);
+    void signalsaveChange(void);
 };
 
 /*
@@ -2925,9 +2989,6 @@ public:
         datainit();
         retranslateUi(this);
     }
-    ~MyMainWindow(){
-        delete view;
-    }
     // Fake a blocking window event.
     void showModal() {
         // Simulate modal behavior, blocking the window until user interaction.
@@ -3032,6 +3093,7 @@ private:
                     myText.append(text);
                     scene.last()->addItem(text);
                     connect(text,&Text::signalDelete,this,&MyMainWindow::slotDelete);
+                    connect(text,&Text::signalsaveChange,this,&MyMainWindow::slotsaveChange);
                 }
                 if(err == 0){
                     scene.removeLast();
@@ -3120,9 +3182,7 @@ private:
             needsave = false ;
             if(dialog.exec() == QDialog::Accepted){
                 config = dialog.getconfig();
-                needsave = true ;
-                setWindowTitle("*" + wintitle);
-                actionFileSave->setEnabled(true);
+                slotsaveChange();
                 resetwidgetsize();
             }
         });
@@ -3155,11 +3215,11 @@ private:
         QLabel *zoomLabel = new QLabel(this);
         zoomLabel->setText("100%");
         view->setContentsMargins(5, 5, 5, 5);
+        view->setDragMode(QGraphicsView::RubberBandDrag);
 
-        // 计算物理像素和逻辑像素的比例
         const qreal dpi = QApplication::primaryScreen()->physicalDotsPerInch();
-        const qreal physicalPixelSize = 25.4 / dpi;  // 单位：mm/像素
-        const qreal userPixelSize = 0.01;           // 用户设置的mm/像素
+        const qreal physicalPixelSize = 25.4 / dpi;
+        const qreal userPixelSize = 0.01;
         const qreal baseScale = userPixelSize / physicalPixelSize;
 
         view->setTransform(QTransform());
@@ -3233,11 +3293,9 @@ private:
         }else{
             ok = false ;
         }
-        /*
+
         for(int i = 0 ; i < myText.size(); ++i){
             Text * text = myText.at(i);
-            qDebug() << text->getText().font.pixelSize();
-
             QString bColor = QString("%1,%2,%3,%4").arg(QString::number(text->getText().bColor.red()),QString::number(text->getText().bColor.green()),QString::number(text->getText().bColor.blue()),QString::number(text->getText().bColor.alpha()));
             QString fColor = QString("%1,%2,%3,%4").arg(QString::number(text->getText().fColor.red()),QString::number(text->getText().fColor.green()),QString::number(text->getText().fColor.blue()),QString::number(text->getText().fColor.alpha()));
             QString temp1 = QString("update [StringText] set page=%1,layer=%2,str='%3',var=%4,varName='%5',posX=%6,posY=%7,bColor='%8',fColor='%10',").arg(
@@ -3246,8 +3304,8 @@ private:
                                     text->getText().str,
                                     QString::number(text->getText().var),
                                     text->getText().varName,
-                                    QString::number(text->getText().posX * 25.4 / screendpiX),
-                                    QString::number(text->getText().posY * 25.4 / screendpiY),
+                                    QString::number(static_cast<double>(text->getText().posX) / ScalingFactor),
+                                    QString::number(static_cast<double>(text->getText().posY) / ScalingFactor),
                                     bColor,
                                     fColor
                                     );
@@ -3255,7 +3313,7 @@ private:
                                     "where uuid='%1'").arg(
                                     text->getText().uuid,
                                     text->getText().font.family(),
-                                    QString::number(text->getText().font.pixelSize() * 25.4 / screendpiX),
+                                    QString::number(static_cast<double>(text->getText().font.pixelSize()) / ScalingFactor),
                                     QString::number(text->getText().font.weight()),
                                     QString::number(text->getText().font.italic()),
                                     QString::number(text->getText().angle)
@@ -3266,7 +3324,7 @@ private:
             }
 
         }
-*/
+
         if(db.isOpen()) db.close();
         return ok;
     }
@@ -3314,6 +3372,11 @@ protected:
 public slots:
     void slotDelete(Text * text){
         myText.removeAll(text);
+    }
+    void slotsaveChange(){
+        needsave = true ;
+        setWindowTitle("*" + wintitle);
+        actionFileSave->setEnabled(true);
     }
 };
 

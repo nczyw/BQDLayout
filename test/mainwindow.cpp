@@ -10,9 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
     widget->setLayout(hbox);
     setCentralWidget(widget);
     connect(btnBQDLayout,&QPushButton::clicked,this,[this]{
-    //    createBQDLayoutFile();
+        createBQDLayoutFile();
     //    printfBQDCode("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd","C:/Users/Sublime/Desktop/pdftest/NewBQD.pdf",1,nullptr);
-        settingsBQDLayout("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd",static_cast<void *>(this));
+    //    settingsBQDLayout("C:/Users/Sublime/Desktop/pdftest/NewBQD.bqd",static_cast<void *>(this));
     });
 }
 

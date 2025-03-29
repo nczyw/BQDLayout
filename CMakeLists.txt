@@ -39,7 +39,7 @@ target_include_directories(${PRONAME} PUBLIC
 target_compile_definitions(${PRONAME} PRIVATE BQDLAYOUT_LIBRARY)
 
 # Create test executable
-
+#[[
 set(TestDll "BQDDllTest")
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TestDll}
@@ -57,7 +57,7 @@ endif()
 target_link_libraries(${TestDll} PRIVATE
 #    Qt${QT_VERSION_MAJOR}::Widgets
 )
-
+]]#
 
 set(TestBQD "BQDTest")
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -83,8 +83,8 @@ target_link_libraries(${TestBQD} PRIVATE
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)
-#    qt_finalize_executable(${TestBQD})
-    qt_finalize_executable(${TestDll})
+    qt_finalize_executable(${TestBQD})
+#    qt_finalize_executable(${TestDll})
 endif()
 
 # Set install path
